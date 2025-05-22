@@ -1,0 +1,57 @@
+@import './base.css';
+
+
+/* 
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-weight: normal;
+}  */
+
+a,
+.green {
+  text-decoration: none;
+  color: rgb(42, 88, 148);
+  transition: 0.4s;
+  padding: 3px;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  background: #ccd5e7;
+  color: #222;
+}
+
+button, .btn-primary {
+  background: #1a73e8;
+  color: #fff;
+  border-radius: 0.5rem;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: background 0.2s;
+  cursor: pointer;
+  position: center;
+}
+
+button:hover, .btn-primary:hover {
+  background: #155ab6;
+}
+
+@media (hover: hover) {
+  a:hover {
+    background-color: hsla(202, 100%, 37%, 0.2);
+  }
+}
+
+@media (min-width: 1024px) {
+  /* body {
+    display: flex;
+    place-items: center;
+  }
+
+  #app {
+    padding: 0 2rem;
+  } */
+}
