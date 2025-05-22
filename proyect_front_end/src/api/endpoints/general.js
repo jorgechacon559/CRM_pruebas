@@ -18,6 +18,6 @@ export default {
     },
 
     editItem(payload) {
-        return api.put(`/${payload.option}`, payload.item);
+        return api.put(`/${payload.option}/${payload.id}`, payload.item);
     },
 }
