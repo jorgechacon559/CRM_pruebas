@@ -1,7 +1,7 @@
 import auth from "@/api/endpoints/auth";
 import router from "@/router";
 import { defineStore } from "pinia";
-import api from "@/api/axios"; // Asegúrate de importar tu instancia de axios
+import api from "@/api/axios"; 
 
 export const useAuthStore = defineStore("auth", {
     state: () => ({
@@ -19,18 +19,18 @@ export const useAuthStore = defineStore("auth", {
                 };
 
                 const response = await auth.login(credentials);
-                // Guarda el token, refresh token y el usuario en sessionStorage
-                this.token = response.data.access_token;
-                this.refreshToken = response.data.refresh_token;
+                // Guarda todos los datos que envía el backend
                 this.user = {
                     usuario_id: response.data.usuario_id,
                     nombre: response.data.nombre,
                     apellido: response.data.apellido,
                 };
+                this.token = response.data.access_token;
+                this.refreshToken = response.data.refresh_token;
                 this.isAuthenticated = true;
+                sessionStorage.setItem("user", JSON.stringify(this.user));
                 sessionStorage.setItem("token", this.token);
                 sessionStorage.setItem("refresh_token", this.refreshToken);
-                sessionStorage.setItem("user", JSON.stringify(this.user));
                 router.push("/inicio");
             } catch (error) {
                 console.log("Catch error")

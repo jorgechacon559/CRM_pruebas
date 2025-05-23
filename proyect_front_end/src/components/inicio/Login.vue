@@ -102,6 +102,7 @@ label {
 
 .form-control {
   width: 100%;
+  box-sizing: border-box;
   padding: 0.9rem 1rem;
   border: 1.5px solid #e5e7eb;
   border-radius: 0.7rem;
