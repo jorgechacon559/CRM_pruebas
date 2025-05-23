@@ -125,10 +125,16 @@ def get_all_stadistics():
     return jsonify(ventas), status_code
 
 @api.route('/chatbot', methods=['POST'])
+@jwt_required()
 def procesar_consulta_chatbot():
     data = request.get_json()
+    if not data or "consulta" not in data:
+        return jsonify({"error": "Falta el campo 'consulta'"}), 400
     respuesta = chat_bot_controller.chat_bot(data, datos_ventas=venta_controller.get_estadisticas_ventas())
-    return jsonify(respuesta), 200
+    return jsonify({
+        "exito": respuesta.get("success", False),
+        "respuesta": respuesta.get("data", "")
+    }), 200
 
 @api.route('/detalle_venta', methods=['GET'])
 @jwt_required()
