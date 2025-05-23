@@ -37,7 +37,7 @@ const paginatorState = (toRight) => {
         Math.max(1, --paginadorData.currentPage)
 }
 
-let identity = localStorage.getItem('user');
+let identity = sessionStorage.getItem('user');
 identity = identity ? JSON.parse(identity) : null;
 
 const getInfo = async () => {

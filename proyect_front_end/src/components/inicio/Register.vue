@@ -48,7 +48,7 @@
           />
         </div>
         <div class="form-group">
-          <label for="password2">Confirmar Contraseña</label>
+          <label for="password2">Confirmar contraseña</label>
           <input
             type="password"
             id="password2"
@@ -141,6 +141,7 @@ label {
 
 .form-control {
   width: 100%;
+  box-sizing: border-box;
   padding: 0.9rem 1rem;
   border: 1.5px solid #e5e7eb;
   border-radius: 0.7rem;

@@ -1,7 +1,7 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth';
 
-let identity = localStorage.getItem('user');
+let identity = sessionStorage.getItem('user');
 identity = identity ? JSON.parse(identity) : null;
 
 const auth = useAuthStore();
