@@ -64,6 +64,7 @@ def registrar_usuario(data):
     }, 201
 
 def login_usuario(data):
+    print("Intentando login con:", data['email'])
     usuario = Usuario.query.filter_by(email=data['email']).first()
     if usuario and check_password_hash(usuario.password, data['password']):
         return {
