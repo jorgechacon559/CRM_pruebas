@@ -8,7 +8,7 @@ class Usuario(db.Model):
     apellido = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
-    baja = db.Column(db.Boolean, nullable=False)
+    baja = db.Column(db.Boolean, nullable=False, default=False)
 
     # Relaciones
     ventas = db.relationship('Ventas', backref='usuario', lazy=True)
