@@ -26,7 +26,7 @@ def get_all_detalle_ventas():
 #obtener detalle de venta por id
 def get_detalle_venta_by_id(id):
     try:
-        detalle_venta = DetalleVenta.query.get(id)
+        detalle_venta = db.session.get(DetalleVenta, id)
         if detalle_venta:
             return {
                 "detalle_venta" : {
@@ -43,9 +43,27 @@ def get_detalle_venta_by_id(id):
     except Exception as e:
         return f'Error: {str(e)}', 500
 
-#crear un detalle de venta
+# Crear un detalle de venta
 def create_detalle_venta(detalle_venta):
     try:
+        # Validación de campos obligatorios
+        campos_obligatorios = ["venta_id", "producto_id", "cantidad", "precio", "total"]
+        for campo in campos_obligatorios:
+            if campo not in detalle_venta:
+                return {"error": f"Falta el campo obligatorio '{campo}'"}, 400
+
+        # Validación de cantidad positiva
+        if detalle_venta["cantidad"] <= 0:
+            return {"error": "La cantidad debe ser mayor a cero."}, 400
+
+        # Validación de precio positivo
+        if detalle_venta["precio"] < 0:
+            return {"error": "El precio no puede ser negativo."}, 400
+
+        # Validación de total positivo
+        if detalle_venta["total"] < 0:
+            return {"error": "El total no puede ser negativo."}, 400
+
         new_detalle_venta = DetalleVenta(
             venta_id = detalle_venta['venta_id'],
             producto_id = detalle_venta['producto_id'],
@@ -67,12 +85,12 @@ def create_detalle_venta(detalle_venta):
             }
         }, 201
     except Exception as e:
-        return f'Error: {str(e)}', 500
+        return {"error": str(e)}, 500
 
 #actualizar un detalle de venta
 def update_detalle_venta(id, detalle_venta):
     try:
-        detalle_venta_db = DetalleVenta.query.get(id)
+        detalle_venta_db = db.session.get(DetalleVenta, id)
         if not detalle_venta_db:
             return {'message' : 'Detalle de venta no encontrado'}, 404
         
@@ -99,7 +117,7 @@ def update_detalle_venta(id, detalle_venta):
 # eliminar un detalle de venta
 def delete_detalle_venta(id):
     try:
-        detalle_venta_db = DetalleVenta.query.get(id)
+        detalle_venta_db = db.session.get(DetalleVenta, id)
         if not detalle_venta_db:
             return {'message' : 'Detalle de venta no encontrado'}, 404
         

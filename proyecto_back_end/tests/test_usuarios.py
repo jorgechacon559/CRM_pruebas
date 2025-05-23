@@ -1,13 +1,3 @@
-import pytest
-from app import create_app
-
-@pytest.fixture
-def client():
-    app = create_app()
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        yield client
-
 def get_token(client):
     # Usa el usuario de pruebas
     response = client.post('/api/login', json={
