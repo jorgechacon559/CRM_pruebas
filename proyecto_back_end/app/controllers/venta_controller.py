@@ -34,7 +34,7 @@ def get_venta_by_id(venta_id):
         venta = Ventas.query.options(
             joinedload(Ventas.detalle_ventas).joinedload(DetalleVenta.producto),
             joinedload(Ventas.usuario)
-        ).get(venta_id)
+        ).filter_by(venta_id=venta_id).first()
         if not venta:
             return {"error": "Venta no encontrada"}, 404
 
@@ -76,8 +76,6 @@ def get_ventas_by_cliente_id(usuario_id, page=1, per_page=20):
     try:
         query = Ventas.query.filter_by(usuario_id=usuario_id).order_by(Ventas.fecha.desc())
         ventas_pag = query.paginate(page=page, per_page=per_page, error_out=False)
-        if not ventas_pag.items:
-            return {"error": "No tiene ventas registradas"}, 200
         ventas_data = [{
             "venta_id": v.venta_id,
             "usuario_id": v.usuario_id,
@@ -98,8 +96,6 @@ def get_ventas_by_cliente_id(usuario_id, page=1, per_page=20):
 # Crear una nueva venta (optimizado y seguro)
 def create_venta(venta_data):
     try:
-        # ...validaciones previas...
-
         productos_ids = [p["producto_id"] for p in venta_data["productos"]]
         productos_db = Productos.query.filter(Productos.producto_id.in_(productos_ids)).all()
         productos_db_dict = {p.producto_id: p for p in productos_db}
@@ -120,7 +116,7 @@ def create_venta(venta_data):
             fecha=venta_data["fecha"]
         )
         db.session.add(venta)
-        db.session.flush()  # Para obtener el ID de la venta
+        db.session.flush()
 
         detalles_creados = []
         for producto in venta_data["productos"]:
@@ -169,7 +165,7 @@ def create_venta(venta_data):
 # Actualizar una venta por su ID (validando stock y usando transacción)
 def update_venta(venta_id, venta_data):
     try:
-        venta = Ventas.query.get(venta_id)
+        venta = db.session.get(Ventas, venta_id)
         if not venta:
             return {"error": "Venta no encontrada"}, 404
 
@@ -180,7 +176,7 @@ def update_venta(venta_id, venta_data):
         # Restaurar stock de los productos de la venta anterior
         detalles_anteriores = DetalleVenta.query.filter_by(venta_id=venta_id).all()
         for detalle in detalles_anteriores:
-            producto = Productos.query.get(detalle.producto_id)
+            producto = db.session.get(Productos, detalle.producto_id)
             if producto:
                 producto.stock += detalle.cantidad
 
@@ -249,14 +245,14 @@ def update_venta(venta_id, venta_data):
 # Eliminar una venta por su ID y restaurar stock
 def delete_venta(venta_id):
     try:
-        venta = Ventas.query.get(venta_id)
+        venta = db.session.get(Ventas, venta_id)
         if not venta:
             return {"error": "Venta no encontrada"}, 404
 
         detalles_venta = DetalleVenta.query.filter_by(venta_id=venta_id).all()
         # Restaurar stock
         for detalle in detalles_venta:
-            producto = Productos.query.get(detalle.producto_id)
+            producto = db.session.get(Productos, detalle.producto_id)
             if producto:
                 producto.stock += detalle.cantidad
             db.session.delete(detalle)
