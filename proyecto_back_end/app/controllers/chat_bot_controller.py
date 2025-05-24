@@ -4,6 +4,7 @@ import os
 from flask import Flask, request, jsonify
 from google.genai import types
 from ..controllers.venta_controller import get_estadisticas_ventas  # ✅ Nombre original del controlador
+from ..controllers.producto_controller import get_all_productos
 
 load_dotenv()
 api_key = 'AIzaSyCRcJxhvCHlho2GHmmQcKSpo9UInH1Q3A0'
@@ -56,7 +57,30 @@ def obtener_datos_ventas(data, get_estadisticas_ventas):
             'ventas_totales_mensuales': ventas_totales_mensuales,
             'totales_anuales': totales_anuales
         }
-        
+
+        productos, _ = get_all_productos()
+        inventario = []
+
+        # Validación robusta para evitar errores si productos es un string
+        if isinstance(productos, str):
+            print("Error: get_all_productos devolvió un string:", productos)
+            productos_lista = []
+        elif isinstance(productos, dict):
+            productos_lista = productos.get("productos", productos)
+        elif isinstance(productos, list):
+            productos_lista = productos
+        else:
+            productos_lista = []
+
+        for p in productos_lista:
+            # Solo agrega si tiene los campos requeridos
+            if isinstance(p, dict):
+                inventario.append({
+                    "producto_id": p.get("producto_id"),
+                    "nombre": p.get("nombre"),
+                    "stock": p.get("stock")
+                })
+        datos_ventas["inventario_actual"] = inventario
 
         return datos_ventas
     except Exception as e:
@@ -75,53 +99,56 @@ def chat_bot(data, datos_ventas):
             model="gemini-2.5-flash-preview-04-17",
             contents=f"""
             # Asistente Avanzado de Análisis de Ventas y Business Intelligence
-            
+
             ## Rol y Objetivo
             Eres un analista experto en inteligencia de negocio especializado en ventas retail. Tu objetivo es proporcionar análisis precisos, relevantes y accionables basados en datos concretos para ayudar en la toma de decisiones estratégicas.
-            
-            ## Datos de Ventas Disponibles
+
+            ## Datos de Ventas e Inventario Disponibles
             ```json
             {datos_ventas}
             ```
+
             inegociable: las respuestas deben ser precisas y cortas, solo en caso de predicciones o preguntas complejas debes extenderte un poco más.
             Agrega emojis.
             - solo cuando te saluden con un hola o quiene eres, di, soy teo, tu asistente de ventas e bissnes inteligent y su emoji
             -cuando te hagan preguntas de estilo, cual es mi productos mas o menos vendido, solo responde con el nombre del producto y el emoji correspondiente.
-            
+            -si te preguntan por productos agotados, bajo stock, inventario, existencia, stock cero o similar, responde usando el campo "inventario_actual" y menciona los productos con stock igual a 0 como "agotados" y los que tengan stock menor a 5 como "bajo stock", usando emojis de alerta o advertencia.
+            -si te preguntan por el inventario general, puedes listar todos los productos con su stock actual.
+
             ## Tipos de Análisis a Realizar
             1. **Análisis de Productos**:
-               - Identifica y explica tendencias en productos más/menos vendidos
-               - Recomienda acciones específicas para optimizar inventario
-               - Sugiere estrategias para impulsar ventas de productos con bajo rendimiento
-            
+            - Identifica y explica tendencias en productos más/menos vendidos
+            - Recomienda acciones específicas para optimizar inventario
+            - Sugiere estrategias para impulsar ventas de productos con bajo rendimiento
+
             2. **Análisis Temporal**:
-               - Identifica patrones estacionales y tendencias mensuales
-               - Compara el rendimiento entre diferentes períodos
-               - Proyecta tendencias futuras basadas en datos históricos
-            
+            - Identifica patrones estacionales y tendencias mensuales
+            - Compara el rendimiento entre diferentes períodos
+            - Proyecta tendencias futuras basadas en datos históricos
+
             3. **Análisis Financiero**:
-               - Calcula y explica márgenes, rentabilidad y KPIs clave
-               - Identifica oportunidades de optimización de ingresos
-               - Evalúa la eficacia de estrategias de precios
-            
+            - Calcula y explica márgenes, rentabilidad y KPIs clave
+            - Identifica oportunidades de optimización de ingresos
+            - Evalúa la eficacia de estrategias de precios
+
             ## Formato de Respuestas
             - **Resumen Ejecutivo**: 2-3 oraciones que capturen los hallazgos más importantes
             - **Análisis Detallado**: Sección estructurada con datos cuantitativos y visualizaciones textuales
             - **Recomendaciones Accionables**: 3-5 puntos concretos priorizados por impacto potencial
             - **Próximos Pasos Sugeridos**: Acciones inmediatas que se pueden implementar
-            
+
             ## Guía de Tono y Estilo
             - Utiliza lenguaje profesional pero accesible
             - Incluye números y porcentajes específicos para respaldar tus análisis
             - Evita generalidades; sé específico y orientado a resultados
             - Responde con empatía a preocupaciones comerciales identificadas
             - Mantén un enfoque constructivo y orientado a soluciones
-            
+
             ## Consulta del Usuario
             "{data["consulta"]}"
-            
+
             Responde siempre en español utilizando terminología profesional de business intelligence y análisis de datos.
-            
+
             """,
             config=types.GenerateContentConfig(
             temperature=0.2,
@@ -129,7 +156,6 @@ def chat_bot(data, datos_ventas):
             )
         )
 
-        
         mensaje = respuesta.text       
         return {'success':True, 'data': mensaje}
     except Exception as e:

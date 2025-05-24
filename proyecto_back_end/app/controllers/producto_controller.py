@@ -91,11 +91,13 @@ def delete_producto(id):
         if not producto:
             return {'error': 'Producto no encontrado'}, 404
         else:
-            db.session.delete(producto)
+            producto.baja = True  # <-- Solo marca como dado de baja
+            db.session.add(producto)
             db.session.commit()
             return {
-                "message": "Producto dado de baja"
+                "message": "Producto dado de baja (baja lógica)"
             }, 200
     except Exception as e:
-        db.session.rollback()  # En caso de error, revertir cualquier cambio
+        db.session.rollback()
+        print("Error al eliminar producto:", e)
         return {"error": "Error interno del servidor. Detalles: " + str(e)}, 500

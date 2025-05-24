@@ -3,8 +3,10 @@ import general from "@/api/endpoints/general";
 import { reactive, toRefs } from "vue";
 export const useVentasStore = defineStore('ventas', () => {
     const state = reactive({
-        data: null,
+        data: [],
         added: null,
+        currentPage: 1,
+        totalPages: 1,
     })
 
     const setData = (item) => {
@@ -15,19 +17,19 @@ export const useVentasStore = defineStore('ventas', () => {
         state.added = item
     }
 
-    const getAllInfoVnt = async (item) => {
+    const getAllInfoVnt = async (item, page = 1) => {
         try {
-            const response = await general.getAllInfo(item);
-            if (!response.data.success) throw response;
-            setData(response.data.data);
+            const response = await general.getAllInfo(item, page); // Debe enviar el número de página
+            // Guarda la página actual y el total de páginas
+            state.data = response.data.data; // array de ventas de esa página
+            state.currentPage = response.data.current_page;
+            state.totalPages = response.data.pages;
             return response.data.data;
-
         } catch (error) {
-            return {
-                success: false,
-                message: error?.message || 'Error al obtener los datos',
-                status: error?.status || 500,
-            }
+            state.data = [];
+            state.currentPage = 1;
+            state.totalPages = 1;
+            return [];
         }
     }
 

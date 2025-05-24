@@ -57,7 +57,6 @@ const deleteItem = async (id) => {
         const response = await products.deleteItemPrd({ 'option': 'productos', id })
         if (response.message !== 'Producto dado de baja') throw { message: 'Error al eliminar producto' };
         getInfo();
-
     } catch (error) {
         console.log(message)
     }

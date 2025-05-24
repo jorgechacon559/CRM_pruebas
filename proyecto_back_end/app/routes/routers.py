@@ -83,7 +83,8 @@ def delete_producto(producto_id):
 @api.route('/ventas', methods=['GET'])
 @jwt_required()
 def get_all_ventas():
-    ventas, status_code = venta_controller.get_all_ventas()
+    page = int(request.args.get('page', 1))  # Lee el parámetro page de la URL
+    ventas, status_code = venta_controller.get_all_ventas(page=page)
     return jsonify(ventas), status_code
 
 @api.route('/ventas/<int:venta_id>', methods=['GET'])
@@ -130,7 +131,10 @@ def procesar_consulta_chatbot():
     data = request.get_json()
     if not data or "consulta" not in data:
         return jsonify({"error": "Falta el campo 'consulta'"}), 400
-    respuesta = chat_bot_controller.chat_bot(data, datos_ventas=venta_controller.get_estadisticas_ventas())
+
+    datos_ventas = chat_bot_controller.obtener_datos_ventas(data, venta_controller.get_estadisticas_ventas)
+    print("DATOS QUE SE ENVIAN AL BOT:", datos_ventas)
+    respuesta = chat_bot_controller.chat_bot(data, datos_ventas)
     return jsonify({
         "exito": respuesta.get("success", False),
         "respuesta": respuesta.get("data", "")
