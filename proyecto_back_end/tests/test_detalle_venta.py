@@ -65,18 +65,14 @@ def test_crud_detalle_venta(client):
     token = get_token(client)
     producto_id = crear_producto(client, token)
     venta_id = crear_venta(client, token, producto_id)
-    
-    # Crear detalle de venta
     detalle_id = crear_detalle_venta(client, token, venta_id, producto_id)
-    
-    # Obtener todos los detalles
+
     resp = client.get('/api/detalle_venta', headers={
         "Authorization": f"Bearer {token}"
     })
     assert resp.status_code == 200
     assert isinstance(resp.get_json(), list)
-    
-    # Obtener detalle por ID
+
     resp = client.get(f'/api/detalle_venta/{detalle_id}', headers={
         "Authorization": f"Bearer {token}"
     })
@@ -84,8 +80,7 @@ def test_crud_detalle_venta(client):
     data = resp.get_json()
     assert "detalle_venta" in data
     assert data["detalle_venta"]["detalle_venta_id"] == detalle_id
-    
-    # Actualizar detalle
+
     update_data = {
         "venta_id": venta_id,
         "producto_id": producto_id,
@@ -101,7 +96,6 @@ def test_crud_detalle_venta(client):
     assert updated["cantidad"] == 3
     assert updated["total"] == 150.0
 
-    # Eliminar detalle
     resp = client.delete(f'/api/detalle_venta/{detalle_id}', headers={
         "Authorization": f"Bearer {token}"
     })
@@ -112,11 +106,9 @@ def test_detalle_venta_validaciones(client):
     token = get_token(client)
     producto_id = crear_producto(client, token)
     venta_id = crear_venta(client, token, producto_id)
-    
-    # Faltan campos obligatorios
+
     detalle = {
         "venta_id": venta_id,
-        # Falta producto_id
         "cantidad": 1,
         "precio": 50.0,
         "total": 50.0
@@ -125,8 +117,7 @@ def test_detalle_venta_validaciones(client):
         "Authorization": f"Bearer {token}"
     })
     assert resp.status_code in (400, 422, 500)
-    
-    # Cantidad negativa
+
     detalle = {
         "venta_id": venta_id,
         "producto_id": producto_id,
@@ -140,6 +131,5 @@ def test_detalle_venta_validaciones(client):
     assert resp.status_code in (400, 422, 500)
 
 def test_detalle_venta_protegido(client):
-    # Sin token no debe permitir acceso
     resp = client.get('/api/detalle_venta')
     assert resp.status_code in (401, 403)

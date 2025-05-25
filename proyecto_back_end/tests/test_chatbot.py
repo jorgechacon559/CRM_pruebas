@@ -23,7 +23,6 @@ def test_chatbot_responde_a_consulta(client):
 
 def test_chatbot_falta_consulta(client):
     token = get_token(client)
-    # No se envía el campo 'consulta'
     response = client.post('/api/chatbot', json={}, headers={
         "Authorization": f"Bearer {token}"
     })
@@ -32,7 +31,6 @@ def test_chatbot_falta_consulta(client):
     assert "error" in data or "exito" in data
 
 def test_chatbot_protegido(client):
-    # Sin token no debe permitir acceso
     response = client.post('/api/chatbot', json={
         "consulta": "¿Quién eres?"
     })

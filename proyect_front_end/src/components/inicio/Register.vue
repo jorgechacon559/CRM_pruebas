@@ -59,7 +59,12 @@
           />
         </div>
         <button type="submit" class="btn-primary">Registrarse</button>
+        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
       </form>
+      <div class="register-switch">
+        <span>¿Ya tienes una cuenta?</span>
+        <button class="btn-secondary" @click="$router.push('/login')">Iniciar sesión</button>
+      </div>
     </div>
   </div>
 </template>
@@ -68,19 +73,28 @@
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
+// Estado de los campos del formulario y mensaje de error
 const name = ref('')
 const apellido = ref('')
 const email = ref('')
 const password = ref('')
 const password2 = ref('')
+const errorMsg = ref('')
 const authStore = useAuthStore()
 
+// Maneja el registro de usuario
 async function register() {
+    if (password.value !== password2.value) {
+        errorMsg.value = "Las contraseñas no coinciden";
+        return;
+    }
     try {
         await authStore.register(name.value, apellido.value, email.value, password.value)
     } catch (error) {
-        console.error(error)
+        // Muestra mensaje de error si falla el registro
+        errorMsg.value = "Error al registrar. Verifica tus datos.";
     } finally {
+        // Limpia los campos después de intentar registrar
         name.value = ''
         apellido.value = ''
         email.value = ''
@@ -97,6 +111,7 @@ async function register() {
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 1.5rem;
 }
 
 .register-container {
@@ -104,6 +119,7 @@ async function register() {
   justify-content: center;
   align-items: center;
   min-height: 400px;
+  width: 600px;
 }
 
 .register-form {
@@ -175,5 +191,33 @@ label {
 
 .btn-primary:hover {
   background-color: #1e40af;
+}
+
+.register-switch {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.98rem;
+  color: #444;
+}
+.btn-secondary {
+  margin-left: 0.5rem;
+  background: #fff;
+  color: #2563eb;
+  border: 1.5px solid #2563eb;
+  border-radius: 0.7rem;
+  padding: 0.5rem 1.1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.btn-secondary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.error-msg {
+  color: #d32f2f;
+  margin-top: 0.5rem;
+  text-align: center;
 }
 </style>

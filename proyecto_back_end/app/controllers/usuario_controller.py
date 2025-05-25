@@ -3,7 +3,9 @@ from app.extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 def get_all_users():
-    # Obtener todos los usuarios de la base de datos
+    """
+    Retorna todos los usuarios registrados.
+    """
     usuarios = Usuario.query.all()
     list_usuario = [{
         "usuario_id": usuario.usuario_id,
@@ -15,8 +17,10 @@ def get_all_users():
     return {'success': True, 'data': list_usuario}, 200
 
 def get_data_usuario(usuario_id):
+    """
+    Retorna los datos de un usuario por su ID.
+    """
     data_usuario = db.session.get(Usuario, usuario_id)
-
     if not data_usuario:
         return {
             "message": "Usuario no encontrado"
@@ -29,17 +33,16 @@ def get_data_usuario(usuario_id):
     }, 200
 
 def registrar_usuario(data):
-    # Verificar si el usuario ya existe en la base de datos
+    """
+    Registra un nuevo usuario si el email no existe.
+    """
     usuario_existente = Usuario.query.filter_by(email=data['email']).first()
     if usuario_existente:
         return {
             "mensaje": "El usuario ya existe"
         }, 400
 
-    print("usuario_existente:", usuario_existente)
-    # Crear un nuevo usuario
     hashed_password = generate_password_hash(data['password'], method='pbkdf2:sha256', salt_length=8)
-
     nuevo_usuario = Usuario(
         nombre=data['nombre'],
         apellido=data['apellido'],
@@ -61,7 +64,9 @@ def registrar_usuario(data):
     }, 201
 
 def login_usuario(data):
-    print("Intentando login con:", data['email'])
+    """
+    Realiza el login de un usuario validando email y contraseña.
+    """
     usuario = Usuario.query.filter_by(email=data['email']).first()
     if usuario and check_password_hash(usuario.password, data['password']):
         return {

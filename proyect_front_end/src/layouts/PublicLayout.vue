@@ -6,10 +6,6 @@
       </header>
       <div class="wrapper">
         <RouterView />
-        <div class="auth-links">
-          <RouterLink to="/login" class="auth-button">Iniciar sesión</RouterLink>
-          <RouterLink to="/register" class="auth-button secondary">Registrarse</RouterLink>
-        </div>
       </div>
     </div>
   </div>
@@ -21,7 +17,6 @@ import { RouterLink, RouterView } from 'vue-router';
 
 <style scoped>
 .public-bg {
-  min-height: 0vh;
   background: linear-gradient(120deg, #f7f8fa 60%, #e0e7ff 100%);
   display: flex;
   align-items: center;
@@ -30,7 +25,7 @@ import { RouterLink, RouterView } from 'vue-router';
 
 .public-container {
   width: 100%;
-  max-width: 420px;
+  max-width: 800px;
   margin: 2rem auto;
   background: #fff;
   border-radius: 1.5rem;
@@ -53,52 +48,13 @@ h1 {
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: -1px;
-  text-transform: none;
 }
 
 .wrapper {
-  padding: 0rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-bottom: 1.5rem;
-}
-
-.auth-links {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.auth-button {
-  display: inline-block;
-  padding: 0.85rem 2rem;
-  background-color: #2563eb;
-  color: #fff;
-  text-decoration: none;
-  border-radius: 0.7rem;
-  font-weight: 700;
-  font-size: 1.05rem;
-  border: none;
-  box-shadow: 0 2px 8px rgba(37,99,235,0.10);
-  transition: background 0.2s, color 0.2s;
-}
-
-.auth-button.secondary {
-  background: #f1f5ff;
-  color: #2563eb;
-  border: 1.5px solid #b6d0fa;
-}
-
-.auth-button:hover {
-  background: #1e40af;
-  color: #fff;
-}
-
-.auth-button.secondary:hover {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
 }
 </style>

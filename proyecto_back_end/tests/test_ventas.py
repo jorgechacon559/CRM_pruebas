@@ -50,7 +50,7 @@ def test_get_all_ventas(client):
 
 def test_get_ventas_by_usuario(client):
     token = get_token(client)
-    usuario_id = 1207  # Cambia por el ID de tu usuario de pruebas
+    usuario_id = 1207
     response = client.get(f'/api/ventas/usuario/{usuario_id}', headers={
         "Authorization": f"Bearer {token}"
     })
@@ -60,7 +60,6 @@ def test_get_ventas_by_usuario(client):
 
 def test_update_venta(client):
     token = get_token(client)
-    # Crea primero una venta
     producto = {
         "nombre": "Producto Venta Update",
         "descripcion": "Producto para venta update",
@@ -91,7 +90,6 @@ def test_update_venta(client):
     })
     venta_id = create_resp.get_json()["venta"]["venta_id"]
 
-    # Actualiza la venta
     update_data = {
         "usuario_id": 1207,
         "cantidad_art": 2,
@@ -114,7 +112,6 @@ def test_update_venta(client):
 
 def test_delete_venta(client):
     token = get_token(client)
-    # Crea primero una venta para borrar
     producto = {
         "nombre": "Producto Venta Delete",
         "descripcion": "Producto para venta delete",
@@ -145,7 +142,6 @@ def test_delete_venta(client):
     })
     venta_id = create_resp.get_json()["venta"]["venta_id"]
 
-    # Borra la venta
     delete_resp = client.delete(f'/api/ventas/{venta_id}', headers={
         "Authorization": f"Bearer {token}"
     })
@@ -154,7 +150,6 @@ def test_delete_venta(client):
 
 def test_create_venta_stock_insuficiente(client):
     token = get_token(client)
-    # Crea un producto con poco stock
     producto = {
         "nombre": "Producto Sin Stock",
         "descripcion": "Producto sin stock suficiente",

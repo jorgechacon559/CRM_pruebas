@@ -26,7 +26,12 @@
           />
         </div>
         <button type="submit" class="btn-primary">Ingresar</button>
+        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
       </form>
+      <div class="login-switch">
+        <span>¿No tienes una cuenta?</span>
+        <button class="btn-secondary" @click="$router.push('/register')">Registrarse</button>
+      </div>
     </div>
   </div>
 </template>
@@ -35,16 +40,21 @@
 import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 
+// Estado para los campos del formulario y mensajes de error
 const correo = ref('');
 const password = ref('');
+const errorMsg = ref('');
 const authStore = useAuthStore();
 
+// Maneja el envío del formulario de login
 async function login() {
     try {
         await authStore.login(correo.value, password.value);
     } catch (error) {
-        console.error(error);
+        // Muestra mensaje de error si las credenciales son incorrectas
+        errorMsg.value = "Correo o contraseña incorrectos";
     } finally {
+        // Limpia los campos después de intentar iniciar sesión
         correo.value = '';
         password.value = '';
     }
@@ -58,6 +68,7 @@ async function login() {
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 1.5rem;
 }
 
 .login-container {
@@ -65,6 +76,7 @@ async function login() {
   justify-content: center;
   align-items: center;
   min-height: 400px;
+  width: 600px
 }
 
 .login-form {
@@ -134,5 +146,33 @@ label {
 
 .btn-primary:hover {
   background-color: #1e40af;
+}
+
+.login-switch {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.98rem;
+  color: #444;
+}
+.btn-secondary {
+  margin-left: 0.5rem;
+  background: #fff;
+  color: #2563eb;
+  border: 1.5px solid #2563eb;
+  border-radius: 0.7rem;
+  padding: 0.5rem 1.1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.btn-secondary:hover {
+  background: #2563eb;
+  color: #fff;
+}
+.error-msg {
+  color: #d32f2f;
+  margin-top: 0.5rem;
+  text-align: center;
 }
 </style>

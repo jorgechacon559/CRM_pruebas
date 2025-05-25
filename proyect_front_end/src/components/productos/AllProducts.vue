@@ -3,7 +3,10 @@ import { reactive, onMounted, computed, ref, watch } from 'vue';
 import { useProductsStore } from '@/stores/products';
 import ModalGen from './ModalGen.vue';
 
+// Encabezados de la tabla de productos
 const headers = reactive(['nombre', 'descripcion', 'precio', 'stock']);
+
+// Estado del paginador
 const paginadorData = reactive({
     currentPage: 1,
     totalPages: undefined,
@@ -11,6 +14,8 @@ const paginadorData = reactive({
 })
 
 const products = useProductsStore();
+
+// Obtiene los productos paginados según la página actual
 const productsData = computed(() => {
     const data = products.data;
     if(!data) return
@@ -22,6 +27,7 @@ const productsData = computed(() => {
     return data.slice(start, end);
 });
 
+// Corrige el número de página si es inválido
 watch(() => paginadorData.currentPage,
 (newVal) => {
     if((newVal === null || newVal === undefined || newVal === '') || newVal < 1) {
@@ -33,38 +39,63 @@ watch(() => paginadorData.currentPage,
 
 const modalGenFather = ref(null);
 
+// Cambia la página del paginador
 const paginatorState = (toRight) => {
     paginadorData.currentPage = toRight ?
         Math.min(paginadorData.totalPages, ++paginadorData.currentPage) :
         Math.max(1, --paginadorData.currentPage)
 }
 
+// Abre el modal para crear/editar producto
 const openModal = () => {
     modalGenFather.value.openModal();
 }
 
+// Obtiene todos los productos desde el store
 const getInfo = async () => {
     await products.getAllInfoPrd('productos');
 }
 
+// Prepara el producto a editar y abre el modal
 const toAdded = (item) => {
     products.setAdded(item)
     openModal();
 }
 
+// Elimina un producto y recarga la lista
 const deleteItem = async (id) => {
     try {
-        const response = await products.deleteItemPrd({ 'option': 'productos', id })
-        if (response.message !== 'Producto dado de baja') throw { message: 'Error al eliminar producto' };
+        const response = await products.deleteItemPrd({ 'option': 'productos', id });
+        if (!response.message || !response.message.includes('Producto dado de baja')) {
+            throw { message: response.message || 'Error al eliminar producto' };
+        }
         getInfo();
     } catch (error) {
-        console.log(message)
+        console.log(error.message);
     }
 }
 
+// Carga los productos al montar el componente
 onMounted(async () => {
     await getInfo();
 })
+
+const pageInput = ref('');
+
+// Sincroniza el input de página con el paginador
+watch(() => paginadorData.currentPage, (val) => {
+  pageInput.value = val;
+});
+
+// Valida y navega a la página indicada por el usuario
+function validateAndGoToPage() {
+  const page = Number(pageInput.value);
+  if (!page || page < 1 || page > paginadorData.totalPages) {
+    pageInput.value = paginadorData.currentPage;
+    return;
+  }
+  paginadorData.currentPage = page;
+}
 
 </script>
 <template>
@@ -87,7 +118,7 @@ onMounted(async () => {
                         <p>{{ item.descripcion }}</p>
                     </div>
                     <div class="centered">
-                        <p>${{ item.precio }}</p>
+                        <p>${{ Number(item.precio).toFixed(2) }}</p>
                     </div>
                     <div class="centered">
                         <p>{{ item.stock }}</p>
@@ -131,7 +162,13 @@ onMounted(async () => {
                     </button>
                 </div>
 
-                <input type="number" :min="1" :max="paginadorData.totalPages" v-model="paginadorData.currentPage">
+                <input
+                    type="text"
+                    placeholder="Ir a página..."
+                    v-model="pageInput"
+                    @keyup.enter="validateAndGoToPage"
+                    @blur="validateAndGoToPage"
+                >
             </div>
         </div>
     </div>
@@ -139,15 +176,14 @@ onMounted(async () => {
 <style scoped lang="scss">
 .table {
     display: grid;
-    width: fit-content;
-
+    width: 100%;
     gap: .125rem;
 
     &-heads {
         display: grid;
         text-transform: capitalize;
-
-        grid-template-columns: 18.75rem 37.5rem 6.25rem 6.25rem 3.125rem 3.125rem;
+        /* Ajusta los valores según lo que quieras que ocupe cada columna */
+        grid-template-columns: 1.2fr 2.5fr 1fr 1fr 0.7fr 0.7fr;
         gap: .125rem;
     }
 
@@ -158,17 +194,16 @@ onMounted(async () => {
 
     &-row {
         display: grid;
-        grid-template-columns: 18.75rem 37.5rem 6.25rem 6.25rem 3.125rem 3.125rem;
+        grid-template-columns: 1.2fr 2.5fr 1fr 1fr 0.7fr 0.7fr;
         gap: .125rem;
 
         >div {
-            display: -webkit-box;
-            -webkit-box-orient: vertical;
-            box-orient: vertical; /* estándar, opcional */
-            -webkit-line-clamp: 1;
-            line-clamp: 1; /* estándar */
-            overflow: hidden;
+            display: block;
             white-space: normal;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            /* Opcional: limita la altura máxima si quieres evitar filas muy altas */
+            /* max-height: 8em; overflow-y: auto; */
         }
 
         button {

@@ -16,7 +16,6 @@ def test_login_fail(client):
     assert response.status_code == 401
 
 def test_register_success(client):
-    # Cambia el correo para evitar duplicados en cada test
     import uuid
     email = f"test_{uuid.uuid4().hex[:8]}@mail.com"
     response = client.post('/api/registrar', json={
@@ -28,7 +27,6 @@ def test_register_success(client):
     assert response.status_code in (200, 201, 202)
 
 def test_register_fail_duplicate(client):
-    # Intenta registrar el mismo usuario dos veces
     email = "duplicado@prueba.com"
     client.post('/api/registrar', json={
         "email": email,
@@ -45,7 +43,6 @@ def test_register_fail_duplicate(client):
     assert response.status_code in (400, 409, 401)
 
 def test_refresh_token(client):
-    # Primero se hace login para obtener el refresh_token
     response = client.post('/api/login', json={
         "email": "pruebas@test.net",
         "password": "pruebas1"
@@ -53,7 +50,6 @@ def test_refresh_token(client):
     assert response.status_code == 200
     refresh_token = response.get_json().get("refresh_token")
     assert refresh_token
-    # Usa el refresh_token para obtener un nuevo access_token
     response = client.post('/api/refresh', headers={
         "Authorization": f"Bearer {refresh_token}"
     })

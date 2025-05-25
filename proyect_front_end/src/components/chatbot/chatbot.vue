@@ -1,11 +1,14 @@
 <template>
+  <!-- Chatbot UI principal -->
   <form class="chat-bot" @submit.prevent="submitData">
-    <div class="chat-bot-container">
+    <div class="chat-bot-container" :class="{ compact: !state }">
       <div class="chat-bot-view" :class="{ 'active': state }">
         <div class="pantalla">
+          <!-- Renderiza los mensajes del chat -->
           <div class="message" v-for="mensaje in mensajes" :class="{ 'toRight': mensaje.usuario }">
             <p>{{ mensaje.content }}</p>
           </div>
+          <!-- Indicador de respuesta generándose -->
           <div v-if="!inputEnable" class="gen-answer">
             <p>Generando respuesta</p>
             <div :style="{ '--Delay': '100ms' }"></div>
@@ -19,8 +22,8 @@
         </div>
       </div>
       <div class="buttons-contenedor">
-        <button type="button" @click="mensajes = []" v-if="state">Limpiar Chat</button>
-        <button type="button" @click="state = !state">{{ state ? 'Cerrar' : 'Abrir' }} Chat</button>
+        <button type="button" @click="mensajes = []" v-if="state">Limpiar chat</button>
+        <button type="button" @click="state = !state">{{ state ? 'Cerrar' : 'Abrir' }} chat</button>
       </div>
     </div>
   </form>
@@ -32,11 +35,12 @@ import { useChatbotStore } from '@/stores/chatBot';
 
 const chatbot = useChatbotStore();
 
-const state = ref(false)
-const actualMsg = ref('')
-const mensajes = ref([])
-const inputEnable = ref(true);
+const state = ref(false) // Estado de visibilidad del chat
+const actualMsg = ref('') // Mensaje actual del usuario
+const mensajes = ref([]) // Historial de mensajes
+const inputEnable = ref(true); // Controla si el input está habilitado
 
+// Envía el mensaje y gestiona la respuesta del bot
 const submitData = async () => {
   if (!inputEnable.value) return;
   if (!actualMsg.value) return;
@@ -54,6 +58,7 @@ const submitData = async () => {
 </script>
 
 <style scoped lang="scss">
+/* Estilos para el chatbot flotante y sus elementos */
 .chat-bot {
   position: fixed;
   bottom: 2rem;
@@ -71,6 +76,19 @@ const submitData = async () => {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+}
+
+.chat-bot-container.compact {
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.chat-bot-container.compact .chat-bot-view {
+  display: none !important;
 }
 
 .chat-bot-view {

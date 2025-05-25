@@ -10,8 +10,8 @@ def login_user():
     resultado, status_code = usuario_controller.login_usuario(data)
     if status_code == 201:
         usuario_id = resultado.get("usuario_id")
-        access_token = create_access_token(identity=str(usuario_id))  # <-- aquí
-        refresh_token = create_refresh_token(identity=str(usuario_id))  # <-- aquí
+        access_token = create_access_token(identity=str(usuario_id))
+        refresh_token = create_refresh_token(identity=str(usuario_id))
         return jsonify({
             "mensaje": resultado["mensaje"],
             "access_token": access_token,
@@ -27,7 +27,7 @@ def login_user():
 @jwt_required(refresh=True)
 def refresh_token():
     current_user = get_jwt_identity()
-    new_access_token = create_access_token(identity=str(current_user))  # <-- aquí
+    new_access_token = create_access_token(identity=str(current_user))
     return jsonify(access_token=new_access_token), 200
 
 @api.route('/registrar', methods=['POST'])
@@ -83,14 +83,14 @@ def delete_producto(producto_id):
 @api.route('/ventas', methods=['GET'])
 @jwt_required()
 def get_all_ventas():
-    page = int(request.args.get('page', 1))  # Lee el parámetro page de la URL
+    page = int(request.args.get('page', 1))
     ventas, status_code = venta_controller.get_all_ventas(page=page)
     return jsonify(ventas), status_code
 
 @api.route('/ventas/<int:venta_id>', methods=['GET'])
 @jwt_required()
 def get_venta(venta_id):
-    data, status_code = venta_controller.get_venta_by_id(venta_id)  # Ahora funcionará
+    data, status_code = venta_controller.get_venta_by_id(venta_id)
     return jsonify(data), status_code
 
 @api.route('/ventas/usuario/<int:usuario_id>', methods=['GET'])

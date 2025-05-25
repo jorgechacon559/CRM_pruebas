@@ -2,26 +2,39 @@
 import { reactive, onMounted, computed, ref, watch } from 'vue';
 import { useUsuariosStore } from '@/stores/usuarios';
 
+// Encabezados de la tabla de usuarios
 const headers = reactive(['Nombre', 'Apellido', 'Correo']);
 
+// Estado del paginador
 const paginadorData = reactive({
     currentPage: 1,
     totalPages: undefined,
     itemsPerPage: 15,
-})
+});
+
+// Input local para el paginador
+const pageInput = ref('');
+
+// Sincroniza el input con la página actual
+watch(() => paginadorData.currentPage, (val) => {
+  pageInput.value = val ? val.toString() : '';
+});
 
 const usuarios = useUsuariosStore();
+
+// Obtiene los usuarios paginados según la página actual
 const usuariosData = computed(() => {
     const data = usuarios.data;
-    if(!data) return
+    if(!data) return;
     paginadorData.totalPages = Math.ceil(data.length / paginadorData.itemsPerPage);
 
     const start = (paginadorData.currentPage - 1) * paginadorData.itemsPerPage;
     const end = start + paginadorData.itemsPerPage;
 
     return data.slice(start, end);
-})
+});
 
+// Corrige el número de página si es inválido
 watch(() => paginadorData.currentPage,
 (newVal) => {
     if((newVal === null || newVal === undefined || newVal === '') || newVal < 1) {
@@ -29,25 +42,37 @@ watch(() => paginadorData.currentPage,
     } else if (newVal > paginadorData.totalPages) {
         paginadorData.currentPage = paginadorData.totalPages;
     }
-})
+});
 
+// Cambia la página del paginador
 const paginatorState = (toRight) => {
     paginadorData.currentPage = toRight ?
         Math.min(paginadorData.totalPages, ++paginadorData.currentPage) :
-        Math.max(1, --paginadorData.currentPage)
-}
+        Math.max(1, --paginadorData.currentPage);
+};
 
+// Valida y navega a la página indicada por el usuario
+const validateAndGoToPage = () => {
+    const page = parseInt(pageInput.value, 10);
+    if (!isNaN(page) && page >= 1 && page <= paginadorData.totalPages) {
+        paginadorData.currentPage = page;
+    }
+    // Si no es válido, puedes limpiar el input o dejarlo igual
+};
+
+// Obtiene el usuario actual desde sessionStorage (si se requiere para lógica futura)
 let identity = sessionStorage.getItem('user');
 identity = identity ? JSON.parse(identity) : null;
 
+// Obtiene todos los usuarios desde el store
 const getInfo = async () => {
     await usuarios.getAllInfoUsr('usuarios');
-}
+};
 
+// Carga los usuarios al montar el componente
 onMounted(async () => {
     await getInfo();
-})
-
+});
 </script>
 <template>
     <div class="container-all-sails">
@@ -95,7 +120,13 @@ onMounted(async () => {
                     </button>
                 </div>
 
-                <input type="number" :min="1" :max="paginadorData.totalPages" v-model="paginadorData.currentPage">
+                <input
+                    type="text"
+                    placeholder="Ir a página..."
+                    v-model="pageInput"
+                    @keyup.enter="validateAndGoToPage"
+                    @blur="validateAndGoToPage"
+                >            
             </div>
         </div>
     </div>

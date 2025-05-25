@@ -12,9 +12,7 @@ const usuarios = useUsuariosStore();
 const productos = useProductsStore();
 
 const modalGenFather = ref(null);
-
-// Variable local para el input del paginador
-const pageInput = ref(1);
+const pageInput = ref('');
 
 // Sincroniza el input con la página actual
 watch(() => ventas.currentPage, (val) => {
@@ -81,7 +79,7 @@ onMounted(async () => {
                         <p>{{ item.cantidad_art }}</p>
                     </div>
                     <div class="centered">
-                        <p>${{ item.total }}</p>
+                        <p>${{ Number(item.total).toFixed(2) }}</p>
                     </div>
                     <button class="btn-delete" @click="deleteItem(item.venta_id)">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -114,10 +112,12 @@ onMounted(async () => {
                     type="number"
                     :min="1"
                     :max="ventas.totalPages"
+                    placeholder="Ir a página..."
                     v-model.number="pageInput"
                     @keyup.enter="goToPage(pageInput)"
                     @blur="goToPage(pageInput)"
                 >
+                <br>
             </div>
         </div>
     </div>
@@ -125,14 +125,13 @@ onMounted(async () => {
 <style scoped lang="scss">
 .table {
     display: grid;
-    width: fit-content;
+    width: 100%;
     gap: .125rem;
 
     &-heads {
         display: grid;
         text-transform: capitalize;
-
-        grid-template-columns: 18.75rem 11.25rem 11.25rem 3.125rem 3.125rem;
+        grid-template-columns: 2fr 1fr 1fr 0.7fr;
         gap: .125rem;
     }
 
@@ -143,7 +142,7 @@ onMounted(async () => {
 
     &-row {
         display: grid;
-        grid-template-columns: 18.75rem 11.25rem 11.25rem 3.125rem 3.125rem;
+        grid-template-columns: 2fr 1fr 1fr 0.7fr;
         gap: .125rem;
 
         >div {
@@ -170,7 +169,6 @@ onMounted(async () => {
         display: flex;
         align-items: center;
         justify-content: center;
-
         gap: 0 .5rem;
     }
 

@@ -1,5 +1,4 @@
 def get_token(client):
-    # Usa el usuario de pruebas
     response = client.post('/api/login', json={
         "email": "pruebas@test.net",
         "password": "pruebas1"
@@ -17,13 +16,11 @@ def test_get_all_usuarios(client):
 
 def test_get_usuario_by_id(client):
     token = get_token(client)
-    # Ajusta el ID según un usuario existente en tu base de datos de pruebas
-    usuario_id = 1207  # Cambia aquí al ID de pruebas si es necesario
+    usuario_id = 1207  # Cambiar aquí al ID de pruebas según si es necesario
     response = client.post(f'/api/user/data/{usuario_id}', headers={
         "Authorization": f"Bearer {token}"
     })
     assert response.status_code in (200, 404)
-    # Si existe, revisa que tenga los campos esperados
     if response.status_code == 200:
         data = response.get_json()
         assert "email" in data or "nombre" in data
