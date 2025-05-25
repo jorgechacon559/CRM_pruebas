@@ -1,24 +1,24 @@
-# Dashboard de Ventas - Backend & Frontend
+# Sistema de gestión de ventas - Dashboard - Backend & Frontend
 
-## Tabla de Contenidos
+## Tabla de contenidos
 
-- [Descripción General](#descripción-general)
+- [Descripción general](#descripción-general)
 - [Requisitos](#requisitos)
 - [Instalación](#instalación)
-- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Estructura del proyecto](#estructura-del-proyecto)
 - [Configuración](#configuración)
-- [Migraciones y Base de Datos](#migraciones-y-base-de-datos)
+- [Migraciones y base de datos](#migraciones-y-base-de-datos)
 - [Ejecución](#ejecución)
 - [Funcionalidades](#funcionalidades)
-- [Endpoints Principales](#endpoints-principales)
+- [Endpoints principales](#endpoints-principales)
 - [Seguridad](#seguridad)
 - [Pruebas](#pruebas)
 - [Despliegue](#despliegue)
-- [Créditos y Licencia](#créditos-y-licencia)
+- [Créditos y licencia](#créditos-y-licencia)
 
 ---
 
-## Descripción General
+## Descripción general
 
 Este proyecto es una plataforma completa de gestión de ventas que incluye:
 
@@ -94,7 +94,7 @@ Este proyecto es una plataforma completa de gestión de ventas que incluye:
 
 ---
 
-## Estructura del Proyecto
+## Estructura del proyecto
 
 ```
 proyecto_back_end/
@@ -140,7 +140,7 @@ proyecto_front_end/
 
 ---
 
-## Migraciones y Base de Datos
+## Migraciones y base de datos
 
 Inicializa y ejecuta las migraciones para crear las tablas:
 
@@ -191,7 +191,7 @@ yarn start
 
 ---
 
-## Endpoints Principales
+## Endpoints principales
 
 | Método | Ruta                       | Descripción                        |
 |--------|----------------------------|------------------------------------|
@@ -240,7 +240,7 @@ yarn start
 
 ---
 
-## Créditos y Licencia
+## Créditos y licencia
 
 **Autores:**  
 Quasar y Pulsar
