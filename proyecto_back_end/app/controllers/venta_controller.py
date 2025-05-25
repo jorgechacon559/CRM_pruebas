@@ -4,8 +4,12 @@ from app.extensions import db
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
-# Retornar una lista de las ventas con paginación y filtro opcional
+# Controlador de ventas: CRUD, paginación, estadísticas y restauración de stock
+
 def get_all_ventas(page=1, per_page=20, usuario_id=None):
+    """
+    Retorna una lista paginada de ventas, opcionalmente filtrada por usuario.
+    """
     try:
         query = Ventas.query.order_by(Ventas.fecha.desc())
         if usuario_id:
@@ -28,8 +32,10 @@ def get_all_ventas(page=1, per_page=20, usuario_id=None):
     except Exception as e:
         return {"error": str(e)}, 500
 
-# Retornar una venta por su ID (optimizado con joinedload)
 def get_venta_by_id(venta_id):
+    """
+    Retorna una venta por su ID, incluyendo detalles y usuario.
+    """
     try:
         venta = Ventas.query.options(
             joinedload(Ventas.detalle_ventas).joinedload(DetalleVenta.producto),
@@ -71,8 +77,10 @@ def get_venta_by_id(venta_id):
     except Exception as e:
         return {"error": str(e)}, 500
 
-# Obtener todas las ventas por el ID del cliente (con paginación)
 def get_ventas_by_cliente_id(usuario_id, page=1, per_page=20):
+    """
+    Retorna todas las ventas de un usuario (cliente) con paginación.
+    """
     try:
         query = Ventas.query.filter_by(usuario_id=usuario_id).order_by(Ventas.fecha.desc())
         ventas_pag = query.paginate(page=page, per_page=per_page, error_out=False)
@@ -93,8 +101,10 @@ def get_ventas_by_cliente_id(usuario_id, page=1, per_page=20):
     except Exception as e:
         return {"error": str(e)}, 500
 
-# Crear una nueva venta (optimizado y seguro)
 def create_venta(venta_data):
+    """
+    Crea una nueva venta, valida stock y descuenta productos.
+    """
     try:
         productos_ids = [p["producto_id"] for p in venta_data["productos"]]
         productos_db = Productos.query.filter(Productos.producto_id.in_(productos_ids)).all()
@@ -108,7 +118,6 @@ def create_venta(venta_data):
             if prod_db.stock < producto["cantidad"]:
                 return {"error": f"Stock insuficiente para {prod_db.nombre}", "success": False}, 400
 
-        # Transacción manual
         venta = Ventas(
             usuario_id=venta_data["usuario_id"],
             cantidad_art=venta_data["cantidad_art"],
@@ -140,8 +149,7 @@ def create_venta(venta_data):
                 "total": float(total_detalle)
             })
 
-        db.session.commit()  # <--- HAZ EL COMMIT AQUÍ
-
+        db.session.commit()
         return {
             "message": "Venta creada con éxito",
             "success": True,
@@ -162,14 +170,15 @@ def create_venta(venta_data):
         db.session.rollback()
         return {"error": str(e), "success": False}, 500
 
-# Actualizar una venta por su ID (validando stock y usando transacción)
 def update_venta(venta_id, venta_data):
+    """
+    Actualiza una venta por su ID, valida stock y restaura/descuenta productos.
+    """
     try:
         venta = db.session.get(Ventas, venta_id)
         if not venta:
             return {"error": "Venta no encontrada"}, 404
 
-        # Validar datos
         if not venta_data.get("productos"):
             return {"error": "La venta no tiene productos registrados", "success": False}, 400
 
@@ -180,10 +189,8 @@ def update_venta(venta_id, venta_data):
             if producto:
                 producto.stock += detalle.cantidad
 
-        # Eliminar detalles anteriores
         DetalleVenta.query.filter_by(venta_id=venta_id).delete()
 
-        # Validar stock de los nuevos productos
         productos_ids = [p["producto_id"] for p in venta_data["productos"]]
         productos_db = Productos.query.filter(Productos.producto_id.in_(productos_ids)).all()
         productos_db_dict = {p.producto_id: p for p in productos_db}
@@ -197,7 +204,6 @@ def update_venta(venta_id, venta_data):
                 db.session.rollback()
                 return {"error": f"Stock insuficiente para {prod_db.nombre}", "success": False}, 400
 
-        # Actualizar venta y descontar stock
         venta.usuario_id = venta_data["usuario_id"]
         venta.cantidad_art = venta_data["cantidad_art"]
         venta.total = venta_data["total"]
@@ -242,15 +248,16 @@ def update_venta(venta_id, venta_data):
         db.session.rollback()
         return {"error": str(e)}, 500
 
-# Eliminar una venta por su ID y restaurar stock
 def delete_venta(venta_id):
+    """
+    Elimina una venta y sus detalles, restaurando el stock de los productos.
+    """
     try:
         venta = db.session.get(Ventas, venta_id)
         if not venta:
             return {"error": "Venta no encontrada"}, 404
 
         detalles_venta = DetalleVenta.query.filter_by(venta_id=venta_id).all()
-        # Restaurar stock
         for detalle in detalles_venta:
             producto = db.session.get(Productos, detalle.producto_id)
             if producto:
@@ -264,8 +271,10 @@ def delete_venta(venta_id):
         db.session.rollback()
         return {"error": str(e)}, 500
 
-# Obtener estadísticas de ventas por mes (mejorado)
 def get_estadisticas_ventas(year=None):
+    """
+    Retorna estadísticas de ventas mensuales, productos más y menos vendidos.
+    """
     try:
         if not year:
             year = datetime.now().year

@@ -10,5 +10,4 @@ class Productos(db.Model):
     stock = db.Column(db.Integer, nullable=False)
     baja = db.Column(db.Boolean, nullable=False, default=False)
 
-    # Relaciones
     detalle_ventas = db.relationship('DetalleVenta', backref='producto', lazy=True)

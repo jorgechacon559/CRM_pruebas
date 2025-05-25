@@ -1,7 +1,7 @@
 import auth from "@/api/endpoints/auth";
 import router from "@/router";
 import { defineStore } from "pinia";
-import api from "@/api/axios"; 
+import api from "@/api/axios";
 
 export const useAuthStore = defineStore("auth", {
     state: () => ({
@@ -13,13 +13,8 @@ export const useAuthStore = defineStore("auth", {
     actions: {
         async login(email, password) {
             try {
-                let credentials = {
-                    email: email,
-                    password: password,
-                };
-
+                const credentials = { email, password };
                 const response = await auth.login(credentials);
-                // Guarda todos los datos que envía el backend
                 this.user = {
                     usuario_id: response.data.usuario_id,
                     nombre: response.data.nombre,
@@ -33,14 +28,13 @@ export const useAuthStore = defineStore("auth", {
                 sessionStorage.setItem("refresh_token", this.refreshToken);
                 router.push("/inicio");
             } catch (error) {
-                console.log("Catch error")
                 console.error(error);
             }
         },
 
         setUser(payload) {
-            this.user = payload
-            sessionStorage.setItem("user", JSON.stringify(payload))
+            this.user = payload;
+            sessionStorage.setItem("user", JSON.stringify(payload));
         },
 
         async logout() {
@@ -62,13 +56,13 @@ export const useAuthStore = defineStore("auth", {
 
         async register(name, apellido, correo, password) {
             try {
-                let credentials = {
+                const credentials = {
                     nombre: name,
                     apellido: apellido,
                     email: correo,
                     password: password,
                 };
-                const response = await auth.register(credentials)
+                const response = await auth.register(credentials);
                 if (response.status === 201) {
                     router.push("/login");
                 } else {
@@ -96,7 +90,6 @@ export const useAuthStore = defineStore("auth", {
         },
 
         initialize() {
-            //Verificamos si hay un token y refresh token en el sessionStorage
             const token = sessionStorage.getItem("token");
             const refreshToken = sessionStorage.getItem("refresh_token");
             const user = sessionStorage.getItem("user");

@@ -1,86 +1,64 @@
 <script setup>
-import { reactive, onMounted, computed, ref, watch } from 'vue';
+import { reactive, onMounted, ref, watch } from 'vue';
 import { useVentasStore } from '@/stores/ventas';
 import { useUsuariosStore } from '@/stores/usuarios';
 import { useProductsStore } from '@/stores/products';
-
 import ModalGenVenta from './ModalGenVenta.vue';
 
 const headers = reactive(['fecha', 'Cantidad de artículos', 'total']);
 
-const paginadorData = reactive({
-    currentPage: 1,
-    totalPages: undefined,
-    itemsPerPage: 15,
-})
-
 const ventas = useVentasStore();
-const ventasData = computed(() => {
-    const data = ventas.data;
-    if (!data) return
-    paginadorData.totalPages = Math.ceil(data.length / paginadorData.itemsPerPage);
-
-    const start = (paginadorData.currentPage - 1) * paginadorData.itemsPerPage;
-    const end = start + paginadorData.itemsPerPage;
-
-    return data.slice(start, end);
-})
-
 const usuarios = useUsuariosStore();
 const productos = useProductsStore();
 
-watch(() => paginadorData.currentPage,
-    (newVal) => {
-        if ((newVal === null || newVal === undefined || newVal === '') || newVal < 1) {
-            paginadorData.currentPage = 1;
-        } else if (newVal > paginadorData.totalPages) {
-            paginadorData.currentPage = paginadorData.totalPages;
-        }
-    })
-
 const modalGenFather = ref(null);
+const pageInput = ref('');
 
-const paginatorState = (toRight) => {
-    paginadorData.currentPage = toRight ?
-        Math.min(paginadorData.totalPages, ++paginadorData.currentPage) :
-        Math.max(1, --paginadorData.currentPage)
-}
+// Sincroniza el input con la página actual
+watch(() => ventas.currentPage, (val) => {
+  pageInput.value = val;
+});
 
-let identity = localStorage.getItem('user');
-identity = identity ? JSON.parse(identity) : null;
+const goToPage = async (page) => {
+    if (page < 1 || page > ventas.totalPages) return;
+    await ventas.getAllInfoVnt('ventas', page);
+};
 
 const openModal = () => {
     modalGenFather.value.openModal();
-}
+};
 
 const getInfo = async () => {
-    console.log("cargando")
-    const arr = [ventas.getAllInfoVnt('ventas'), usuarios.getAllInfoUsr('usuarios'), productos.getAllInfoPrd('productos')];
-    await Promise.all(arr);
-    console.log("listo")
-}
+    await ventas.getAllInfoVnt('ventas', ventas.currentPage || 1);
+    await usuarios.getAllInfoUsr('usuarios');
+    await productos.getAllInfoPrd('productos');
+};
 
 const toAdded = (item) => {
     ventas.setAdded(item)
     openModal();
-}
+};
 
 const deleteItem = async (id) => {
     try {
         const response = await ventas.deleteItemVnt({ 'option': 'ventas', id })
         if (!response.success) throw { message: 'Error al eliminar producto' };
-        getInfo();
-
+        // Si la página queda vacía tras eliminar, ve a la anterior
+        if (ventas.data.length === 1 && ventas.currentPage > 1) {
+            await goToPage(ventas.currentPage - 1);
+        } else {
+            await goToPage(ventas.currentPage);
+        }
     } catch (error) {
-        console.log(message)
+        console.log(error.message)
     }
-}
+};
 
 onMounted(async () => {
     await getInfo();
-})
-
+});
 </script>
+
 <template>
     <div class="container-all-sails">
         <ModalGenVenta ref="modalGenFather" @allFine="getInfo" />
@@ -93,7 +71,7 @@ onMounted(async () => {
                 </div>
             </div>
             <div class="table-data">
-                <div class="table-row" v-for="(item, index) in ventasData" :key="index">
+                <div class="table-row" v-for="(item, index) in ventas.data" :key="item.venta_id">
                     <div>
                         <p>{{ item.fecha }}</p>
                     </div>
@@ -101,15 +79,8 @@ onMounted(async () => {
                         <p>{{ item.cantidad_art }}</p>
                     </div>
                     <div class="centered">
-                        <p>${{ item.total }}</p>
+                        <p>${{ Number(item.total).toFixed(2) }}</p>
                     </div>
-                    <!-- <button class="edit" @click="toAdded(item)">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                            <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"></path>
-                            <path d="M13.5 6.5l4 4"></path>
-                        </svg>
-                    </button> -->
                     <button class="btn-delete" @click="deleteItem(item.venta_id)">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="5" y1="5" x2="15" y2="15"/>
@@ -121,28 +92,32 @@ onMounted(async () => {
 
             <div class="paginator">
                 <div class="paginator-controls">
-                    <button @click="paginatorState(false)">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24"
-                            height="24">
-                            <path
-                                d="M12 2a10 10 0 0 1 .324 19.995l-.324 .005l-.324 -.005a10 10 0 0 1 .324 -19.995zm.707 5.293a1 1 0 0 0 -1.414 0l-4 4a1.048 1.048 0 0 0 -.083 .094l-.064 .092l-.052 .098l-.044 .11l-.03 .112l-.017 .126l-.003 .075l.004 .09l.007 .058l.025 .118l.035 .105l.054 .113l.043 .07l.071 .095l.054 .058l4 4l.094 .083a1 1 0 0 0 1.32 -1.497l-2.292 -2.293h5.585l.117 -.007a1 1 0 0 0 -.117 -1.993h-5.586l2.293 -2.293l.083 -.094a1 1 0 0 0 -.083 -1.32z">
-                            </path>
+                    <button @click="goToPage(ventas.currentPage - 1)" :disabled="ventas.currentPage <= 1">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                            <path d="M12 2a10 10 0 0 1 .324 19.995l-.324 .005l-.324 -.005a10 10 0 0 1 .324 -19.995zm.707 5.293a1 1 0 0 0 -1.414 0l-4 4a1.048 1.048 0 0 0 -.083 .094l-.064 .092l-.052 .098l-.044 .11l-.03 .112l-.017 .126l-.003 .075l.004 .09l.007 .058l.025 .118l.035 .105l.054 .113l.043 .07l.071 .095l.054 .058l4 4l.094 .083a1 1 0 0 0 1.32 -1.497l-2.292 -2.293h5.585l.117 -.007a1 1 0 0 0 -.117 -1.993h-5.586l2.293 -2.293l.083 -.094a1 1 0 0 0 -.083 -1.32z"></path>
                         </svg>
                     </button>
 
-                    <p>{{ paginadorData.currentPage }} / {{ paginadorData.totalPages }}</p>
-
-                    <button @click="paginatorState(true)">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24"
-                            height="24">
-                            <path
-                                d="M12 2l.324 .005a10 10 0 1 1 -.648 0l.324 -.005zm.613 5.21a1 1 0 0 0 -1.32 1.497l2.291 2.293h-5.584l-.117 .007a1 1 0 0 0 .117 1.993h5.584l-2.291 2.293l-.083 .094a1 1 0 0 0 1.497 1.32l4 -4l.073 -.082l.064 -.089l.062 -.113l.044 -.11l.03 -.112l.017 -.126l.003 -.075l-.007 -.118l-.029 -.148l-.035 -.105l-.054 -.113l-.071 -.111a1.008 1.008 0 0 0 -.097 -.112l-4 -4z">
-                            </path>
+                    <p>
+                        {{ ventas.currentPage }} / {{ ventas.totalPages }}
+                    </p>
+                    <button @click="goToPage(ventas.currentPage + 1)" :disabled="ventas.currentPage >= ventas.totalPages">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                            <path d="M12 2l.324 .005a10 10 0 1 1 -.648 0l.324 -.005zm.613 5.21a1 1 0 0 0 -1.32 1.497l2.291 2.293h-5.584l-.117 .007a1 1 0 0 0 .117 1.993h5.584l-2.291 2.293l-.083 .094a1 1 0 0 0 1.497 1.32l4 -4l.073 -.082l.064 -.089l.062 -.113l.044 -.11l.03 -.112l.017 -.126l.003 -.075l-.007 -.118l-.029 -.148l-.035 -.105l-.054 -.113l-.071 -.111a1.008 1.008 0 0 0 -.097 -.112l-4 -4z"></path>
                         </svg>
                     </button>
                 </div>
 
-                <input type="number" :min="1" :max="paginadorData.totalPages" v-model="paginadorData.currentPage">
+                <input
+                    type="number"
+                    :min="1"
+                    :max="ventas.totalPages"
+                    placeholder="Ir a página..."
+                    v-model.number="pageInput"
+                    @keyup.enter="goToPage(pageInput)"
+                    @blur="goToPage(pageInput)"
+                >
+                <br>
             </div>
         </div>
     </div>
@@ -150,14 +125,13 @@ onMounted(async () => {
 <style scoped lang="scss">
 .table {
     display: grid;
-    width: fit-content;
+    width: 100%;
     gap: .125rem;
 
     &-heads {
         display: grid;
         text-transform: capitalize;
-
-        grid-template-columns: 18.75rem 11.25rem 11.25rem 3.125rem 3.125rem;
+        grid-template-columns: 2fr 1fr 1fr 0.7fr;
         gap: .125rem;
     }
 
@@ -168,7 +142,7 @@ onMounted(async () => {
 
     &-row {
         display: grid;
-        grid-template-columns: 18.75rem 11.25rem 11.25rem 3.125rem 3.125rem;
+        grid-template-columns: 2fr 1fr 1fr 0.7fr;
         gap: .125rem;
 
         >div {
@@ -195,7 +169,6 @@ onMounted(async () => {
         display: flex;
         align-items: center;
         justify-content: center;
-
         gap: 0 .5rem;
     }
 

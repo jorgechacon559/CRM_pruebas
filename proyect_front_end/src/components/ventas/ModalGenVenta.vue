@@ -1,15 +1,11 @@
 <script setup>
-import { ref, defineExpose, reactive, computed, watch } from 'vue';
+import { ref, defineExpose, reactive, computed, watch, onMounted } from 'vue';
 import { useVentasStore } from '@/stores/ventas';
-import { useUsuariosStore } from '@/stores/usuarios';
 import { useProductsStore } from '@/stores/products';
 
 const ModalGenVenta = ref(null);
-
-// Emitir eventos
 const emit = defineEmits(['allFine']);
 
-const buscador = ref(null);
 const buscadorPrd = ref(null);
 const userSelected = ref({
     nombre: null,
@@ -18,42 +14,22 @@ const userSelected = ref({
     usuario_id: null
 });
 
-// Store y estado reactivo
 const ventas = useVentasStore();
 const ventasAdded = computed(() => ventas.added);
-
-const usuarios = useUsuariosStore();
-const usuariosData = computed(() => usuarios.data);
 
 const products = useProductsStore();
 const productsData = computed(() => {
     const searchValuePrd = buscadorPrd.value?.toLowerCase().trim();
-    if (!searchValuePrd) return []; const deleteOnProduct = (index) => {
-        dataToSend.productos.splice(index, 1);
-    }
-    // console.log(products.data)
-
+    if (!searchValuePrd) return [];
     return products.data.filter(item =>
         item.nombre?.toLowerCase().includes(searchValuePrd)
     ).slice(0, 5);
 });
 
-const usuariosDataBuscador = computed(() => {
-    const searchValue = buscador.value?.toLowerCase().trim();
-    if (!searchValue) return [];
-
-    return usuariosData.value.filter(item =>
-        item.nombre?.toLowerCase().includes(searchValue) ||
-        item.apellido?.toLowerCase().includes(searchValue) ||
-        item.email?.toLowerCase().includes(searchValue)
-    ).slice(0, 5);
-})
-
 const addProduct = (product) => {
     const existingProduct = dataToSend.productos.find(
         p => p.producto_id === product.producto_id
     );
-
     if (!existingProduct) {
         dataToSend.productos.push({ ...product, cantidad: 1 });
     }
@@ -66,24 +42,26 @@ const dataToSend = reactive({
     fecha: null,
     total: null,
     cantidad_art: null,
-    productos: [
-
-    ],
+    productos: [],
 });
 
 const deleteOnProduct = (index) => dataToSend.productos.splice(index, 1);
 
+const identity = ref(null);
+onMounted(() => {
+    const user = sessionStorage.getItem('user');
+    identity.value = user ? JSON.parse(user) : null;
+});
 
-// Rellenar el formulario automáticamente si hay un producto seleccionado
-watch(ventasAdded, (newProduct) => {
-    if (newProduct) {
-        const selectedUser = usuariosData.value.find(item => item.usuario_id === newProduct.usuario_id);
-        Object.assign(userSelected.value, selectedUser || {});
-        dataToSend.venta_id = newProduct.venta_id;
-        dataToSend.usuario_id = newProduct.usuario_id;
-        dataToSend.fecha = newProduct.fecha;
-        dataToSend.total = newProduct.total;
-        dataToSend.cantidad_art = newProduct.cantidad_art;
+watch(ventasAdded, (newVenta) => {
+    if (newVenta) {
+        Object.assign(userSelected.value, identity.value || {});
+        dataToSend.venta_id = newVenta.venta_id;
+        dataToSend.usuario_id = newVenta.usuario_id;
+        dataToSend.fecha = newVenta.fecha;
+        dataToSend.total = newVenta.total;
+        dataToSend.cantidad_art = newVenta.cantidad_art;
+        dataToSend.productos = newVenta.productos ? [...newVenta.productos] : [];
     } else {
         resetForm();
     }
@@ -104,9 +82,11 @@ watch(
     { deep: true }
 );
 
-
-// Métodos del modal
 const openModal = () => {
+    if (identity.value) {
+        dataToSend.usuario_id = identity.value.usuario_id;
+        Object.assign(userSelected.value, identity.value);
+    }
     ModalGenVenta.value.showModal();
     requestAnimationFrame(() => {
         window.addEventListener('click', clickOutside);
@@ -118,32 +98,25 @@ const closeModal = () => {
     ModalGenVenta.value?.close();
     window.removeEventListener('click', clickOutside);
     window.removeEventListener('keydown', handleEsc);
-
-    // Limpiar producto seleccionado en el store y formulario
     ventas.setAdded(null);
     resetForm();
 };
 
-// Resetea los datos del formulario
 const resetForm = () => {
-    buscador.value = null;
-
-    Object.assign(userSelected.value, {
+    Object.assign(userSelected.value, identity.value || {
         nombre: null,
         apellido: null,
         email: null,
         usuario_id: null
     });
-
     dataToSend.venta_id = null;
-    dataToSend.usuario_id = null;
+    dataToSend.usuario_id = identity.value ? identity.value.usuario_id : null;
     dataToSend.fecha = null;
     dataToSend.total = null;
     dataToSend.cantidad_art = null;
     dataToSend.productos = [];
 };
 
-// Detectar clic fuera del modal
 const clickOutside = (e) => {
     if (!ModalGenVenta.value?.open) return;
     const rect = ModalGenVenta.value.getBoundingClientRect();
@@ -152,19 +125,16 @@ const clickOutside = (e) => {
         e.clientX <= rect.right &&
         e.clientY >= rect.top &&
         e.clientY <= rect.bottom;
-
     if (!isInDialog) closeModal();
 };
 
-// Detectar tecla ESC para cerrar el modal
 const handleEsc = (e) => {
     if (e.key === "Escape") closeModal();
 };
 
-// Enviar datos
 const submitData = async () => {
     if (!dataToSend.usuario_id) {
-        alert('Selecciona un usuario');
+        alert('No se detectó usuario autenticado');
         return;
     }
     if (!dataToSend.productos.length) {
@@ -179,14 +149,12 @@ const submitData = async () => {
     try {
         const item = { ...dataToSend };
         const ruta = item.venta_id ? 'editItemVnt' : 'addItemVnt';
-
         const option = item.venta_id ? `ventas/${item.venta_id}` : 'ventas'
-
         const response = await ventas[ruta]({ option, item });
 
         if (response.success) {
             emit('allFine');
-            closeModal(); // Cerrar el modal automáticamente si todo está bien
+            closeModal();
         } else {
             throw new Error('Ha ocurrido un error');
         }
@@ -195,135 +163,165 @@ const submitData = async () => {
     }
 };
 
-// Exponer métodos al padre
 defineExpose({
     openModal,
 });
-
 </script>
-<!-- UserSearch.vue -->
+
 <template>
-    <dialog ref="ModalGenVenta">
-        <div class="container-modal">
-            <div>
-                <label for="searcher">Buscador de usuarios</label>
-                <input type="text" v-model="buscador" id="searcher" placeholder="Buscar por nombre, correo o apellido">
-                <div class="height-ancor">
-                    <div class="button-list" :class="{ 'active': buscador && buscador.length > 0 }">
-                        <div>
-                            <button v-for="(item, index) in usuariosDataBuscador" :key="index" @click="buscador = null,
-                                userSelected = item,
-                                dataToSend.usuario_id = item.usuario_id">{{
-                                    item.nombre }} {{
-                                    item.apellido
-                                }}</button>
-                        </div>
-                    </div>
+    <dialog ref="ModalGenVenta" class="modal-gen-venta">
+        <form class="container-modal" @submit.prevent="submitData">
+            <h2 class="modal-title">{{ dataToSend.venta_id ? 'Editar venta' : 'Nueva venta' }}</h2>
+            <div class="form-group">
+                <label>Usuario</label>
+                <div class="selected-user">
+                    <span v-if="userSelected.nombre">{{ userSelected.nombre }} {{ userSelected.apellido }}</span>
+                    <span v-else class="no-user">Ninguno</span>
                 </div>
             </div>
 
-            <h4>Usuario seleccionado: {{ userSelected.nombre }} {{ userSelected.apellido }}</h4>
-
-            <div>
+            <div class="form-group">
                 <label for="fecha">Fecha</label>
-                <input type="date" id="fecha" v-model="dataToSend.fecha">
+                <input type="date" id="fecha" v-model="dataToSend.fecha" class="form-control">
             </div>
 
-            <div>
-                <label for="searcher">Buscador de productos</label>
-                <input type="text" v-model="buscadorPrd" id="searcher"
-                    placeholder="Buscar por nombre, correo o apellido">
-
+            <div class="form-group">
+                <label for="searcherPrd">Buscador de productos</label>
+                <input type="text" v-model="buscadorPrd" id="searcherPrd" class="form-control"
+                    placeholder="Buscar producto por nombre">
                 <div class="height-ancor" v-if="buscadorPrd && buscadorPrd.length > 0">
                     <div class="button-list">
-                        <button v-for="(item, index) in productsData" :key="index" @click="addProduct(item)">
+                        <button v-for="(item, index) in productsData" :key="index" type="button" @click="addProduct(item)">
                             {{ item.nombre }}
                         </button>
                     </div>
                 </div>
+            </div>
 
-                <div class="productWrapper" v-for="(item, index) in dataToSend.productos" :key="index">
-                    <p>{{ item.nombre }} <span style="color: #888;">(Stock: {{ item.stock }})</span></p>
-                    <input
-                        type="number"
-                        placeholder="Cantidad"
-                        v-model.number="item.cantidad"
-                        :min="1"
-                        :max="item.stock"
-                        @input="item.cantidad = Math.max(1, Math.min(item.cantidad, item.stock))"
-                    >
-                    <p>${{ item.precio }}</p>
-                    <p v-if="item.cantidad > 0">${{ (item.cantidad * Number(item.precio)).toFixed(2) }}</p>
-                    <button @click="deleteOnProduct(index)">
-    
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-                            <path d="M9 12l6 0"></path>
-                        </svg>
-                    </button>
+            <div class="form-group" v-for="(item, index) in dataToSend.productos" :key="index">
+                <div class="productWrapper">
+                    <div class="product-info">
+                        <p><b>{{ item.nombre }}</b> <span style="color: #888;">(Stock: {{ item.stock }})</span></p>
+                        <p>Precio: ${{ item.precio }}</p>
+                    </div>
+                    <div class="product-actions">
+                        <input
+                            type="number"
+                            class="form-control"
+                            placeholder="Cantidad"
+                            v-model.number="item.cantidad"
+                            :min="1"
+                            :max="item.stock"
+                            @input="item.cantidad = Math.max(1, Math.min(item.cantidad, item.stock))"
+                        >
+                        <span class="subtotal" v-if="item.cantidad > 0">
+                            Subtotal: ${{ (item.cantidad * Number(item.precio)).toFixed(2) }}
+                        </span>
+                        <button type="button" class="btn-delete" @click="deleteOnProduct(index)">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round" width="20" height="20" stroke-width="2">
+                                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0"></path>
+                                <path d="M9 12l6 0"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div>
-                <label for="number">Total</label>
-                <input type="number" id="number" v-model="dataToSend.total" disabled>
+            <div class="form-group">
+                <label for="total">Total</label>
+                <input type="number" id="total" :value="Number(dataToSend.total).toFixed(2)" class="form-control" disabled>
             </div>
 
-            <div>
-                <label for="stock">Cantidad</label>
-                <input type="number" id="stock" v-model="dataToSend.cantidad_art" disabled>
+            <div class="form-group">
+                <label for="cantidad_art">Cantidad de artículos</label>
+                <input type="number" id="cantidad_art" v-model="dataToSend.cantidad_art" class="form-control" disabled>
             </div>
 
-            <button @click="submitData" :disabled="!dataToSend.usuario_id || !dataToSend.productos.length">Guardar</button>
-        </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary" :disabled="!dataToSend.usuario_id || !dataToSend.productos.length">Guardar</button>
+                <button type="button" class="btn-secondary" @click="closeModal">Cancelar</button>
+            </div>
+        </form>
     </dialog>
 </template>
+
 <style scoped lang="scss">
-dialog {
-    margin: auto;
-    width: min(100%, 400px);
+.modal-gen-venta {
+    border: none;
+    padding: 0;
+    background: transparent;
 }
 
 .container-modal {
-    display: grid;
-
-    div {
-        display: grid;
-    }
+    background: #fff;
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 32px rgba(37,99,235,0.12);
+    padding: 2.5rem 2.5rem 2rem 2.5rem;
+    min-width: 340px;
+    max-width: 95vw;
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: stretch;
 }
 
-.user-search-container {
+.modal-title {
+    text-align: center;
+    color: #2563eb;
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: -1px;
+}
+
+.form-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    max-width: 400px;
-    margin: auto;
-    padding: 1rem;
 }
 
-.search-label {
-    font-weight: bold;
-    font-size: 0.95rem;
-    color: #333;
-}
-
-.search-input {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 0.5rem;
+label {
+    color: #2563eb;
+    font-weight: 600;
     font-size: 1rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: border-color 0.3s;
 }
 
-.search-input:focus {
-    border-color: #007BFF;
+.form-control {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.9rem 1rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 0.7rem;
+    font-size: 1rem;
+    background-color: #f7f8fa;
+    color: #222;
+    transition: border 0.2s;
+    resize: none;
+}
+
+.form-control:focus {
+    border-color: #2563eb;
     outline: none;
+    background: #fff;
+}
+
+.selected-user {
+    padding: 0.5rem 1rem;
+    background: #f1f5ff;
+    border-radius: 0.7rem;
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.no-user {
+    color: #888;
+    font-style: italic;
 }
 
 .height-ancor {
-    height: .9375rem;
+    min-height: 1.5rem;
     z-index: 3;
 }
 
@@ -339,34 +337,124 @@ dialog {
     display: grid;
     gap: 0.5rem;
     padding-top: 0.5rem;
-    background-color: #181818;
+    background-color: #f7f8fa;
+    border-radius: 0.7rem;
 }
 
 .button-list.active {
     grid-template-rows: 1fr;
 }
 
-.user-button {
+.button-list button {
     padding: 0.5rem 1rem;
-    background-color: #f0f0f0;
-    border: 1px solid #ddd;
+    background-color: #e5e7eb;
+    border: none;
     border-radius: 0.4rem;
     text-align: left;
     font-size: 0.95rem;
     cursor: pointer;
-    transition: background-color 0.3s;
+    color: #2563eb;
+    font-weight: 600;
+    transition: background-color 0.2s;
 }
 
-.user-button:hover {
-    background-color: #e0e0e0;
+.button-list button:hover {
+    background-color: #c7d7fa;
 }
 
 .productWrapper {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: #f7f8fa;
+    border-radius: 0.7rem;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+}
 
-    p:first-of-type {
-        grid-column: 1 / -1;
-    }
+.product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.product-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.subtotal {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.btn-delete {
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    color: #e53e3e;
+    border-radius: 50%;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.2s, border 0.2s, color 0.2s;
+    box-shadow: 0 1px 4px rgba(229,62,62,0.04);
+    font-size: 1.1rem;
+}
+
+.btn-delete:hover {
+    background: #ffeaea;
+    border-color: #e53e3e;
+    color: #b91c1c;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.btn-primary {
+    background-color: #2563eb;
+    color: #fff;
+    padding: 0.9rem 1.5rem;
+    border: none;
+    border-radius: 0.7rem;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+    transition: background 0.2s;
+}
+
+.btn-primary:disabled {
+    background: #b6d0fa;
+    cursor: not-allowed;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #1e40af;
+}
+
+.btn-secondary {
+    background: #fff;
+    color: #2563eb;
+    border: 1.5px solid #2563eb;
+    border-radius: 0.7rem;
+    padding: 0.9rem 1.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #2563eb;
+    color: #fff;
 }
 </style>

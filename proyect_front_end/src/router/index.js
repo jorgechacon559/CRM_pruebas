@@ -1,7 +1,8 @@
-import { createRouter, createMemoryHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
 
 export const router = createRouter({
-  history: createMemoryHistory(import.meta.env.BASE_URL || '/'),
+  history: createWebHistory(import.meta.env.BASE_URL || '/'),
   routes: [
     {
       path: "/",
@@ -23,7 +24,6 @@ export const router = createRouter({
         }
       ],
     },
-
     {
       path: "/inicio",
       name: 'inicio',
@@ -53,10 +53,27 @@ export const router = createRouter({
   ]
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const user = sessionStorage.getItem('user');
-  if (to.meta.requiresAuth && !user) {
-    next({ name: 'login' });
+  const token = sessionStorage.getItem('token');
+  const refreshToken = sessionStorage.getItem('refresh_token');
+  const authStore = useAuthStore();
+
+  if (to.meta.requiresAuth) {
+    if (!user) {
+      next({ name: 'login' });
+    } else if (!token && refreshToken) {
+      const refreshed = await authStore.refreshAccessToken();
+      if (refreshed) {
+        next();
+      } else {
+        next({ name: 'login' });
+      }
+    } else if (!token && !refreshToken) {
+      next({ name: 'login' });
+    } else {
+      next();
+    }
   } else if (user && (to.name === 'login' || to.name === 'register')) {
     next({ name: 'inicio' });
   } else {

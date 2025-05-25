@@ -19,7 +19,6 @@ def test_create_producto(client):
     response = client.post('/api/productos', json=producto, headers={
         "Authorization": f"Bearer {token}"
     })
-    print("Respuesta:", response.get_json())
     assert response.status_code in (200, 201)
     data = response.get_json()
     assert "producto" in data, f"Respuesta inesperada: {data}"
@@ -30,14 +29,13 @@ def test_get_all_productos(client):
     response = client.get('/api/productos', headers={
         "Authorization": f"Bearer {token}"
     })
-    assert response.status_code == 201 or response.status_code == 200
+    assert response.status_code in (200, 201)
     data = response.get_json()
     assert "productos" in data
     assert isinstance(data["productos"], list)
 
 def test_update_producto(client):
     token = get_token(client)
-    # Primero crea un producto
     producto = {
         "nombre": f"Producto Update {uuid.uuid4()}",
         "descripcion": "Desc update",
@@ -52,7 +50,6 @@ def test_update_producto(client):
     assert "producto" in data, f"Respuesta inesperada: {data}"
     producto_id = data["producto"]["producto_id"]
 
-    # Ahora actualiza el producto
     update_data = {
         "nombre": "Producto Actualizado",
         "descripcion": "Desc actualizada",
@@ -70,7 +67,6 @@ def test_update_producto(client):
 
 def test_delete_producto(client):
     token = get_token(client)
-    # Crea un producto para borrar
     producto = {
         "nombre": f"Producto Delete {uuid.uuid4()}",
         "descripcion": "Desc delete",
@@ -85,7 +81,6 @@ def test_delete_producto(client):
     assert "producto" in data, f"Respuesta inesperada: {data}"
     producto_id = data["producto"]["producto_id"]
 
-    # Borra el producto
     delete_resp = client.delete(f'/api/productos/{producto_id}', headers={
         "Authorization": f"Bearer {token}"
     })
@@ -94,7 +89,6 @@ def test_delete_producto(client):
 
 def test_create_producto_faltan_campos(client):
     token = get_token(client)
-    # Falta el campo 'nombre'
     producto = {
         "descripcion": "Sin nombre",
         "precio": 10.0,

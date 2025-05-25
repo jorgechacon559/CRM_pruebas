@@ -10,5 +10,4 @@ class Usuario(db.Model):
     password = db.Column(db.String(255), nullable=False)
     baja = db.Column(db.Boolean, nullable=False, default=False)
 
-    # Relaciones
     ventas = db.relationship('Ventas', backref='usuario', lazy=True)

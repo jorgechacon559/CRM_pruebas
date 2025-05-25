@@ -9,5 +9,4 @@ class Ventas(db.Model):
     total = db.Column(db.Float, nullable=False)
     cantidad_art = db.Column(db.Integer, nullable=False)
 
-    # Relaciones
     detalle_ventas = db.relationship('DetalleVenta', backref='venta', lazy=True)

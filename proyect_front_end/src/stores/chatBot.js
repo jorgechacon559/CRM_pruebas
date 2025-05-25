@@ -7,7 +7,6 @@ export const useChatbotStore = defineStore('chatbot', () => {
             const response = await general.addItem(item);
             if (!response.data) throw response;
             return response.data;
-
         } catch (error) {
             return {
                 success: false,
@@ -16,7 +15,5 @@ export const useChatbotStore = defineStore('chatbot', () => {
             }
         }
     }
-
     return { addItemBot }
-})
-
+});

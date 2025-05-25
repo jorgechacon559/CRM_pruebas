@@ -10,12 +10,10 @@ import { useAuthStore } from './stores/auth'
 const pinia = createPinia()
 const app = createApp(App)
 
-
 app.use(pinia)
 app.use(router)
 
-//Inicializamos el sotre
-const autStore = useAuthStore()
-autStore.initialize()
+const authStore = useAuthStore()
+authStore.initialize()
 
 app.mount('#app')

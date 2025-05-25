@@ -1,10 +1,8 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth';
 
-let identity = sessionStorage.getItem('user');
-identity = identity ? JSON.parse(identity) : null;
-
 const auth = useAuthStore();
+const identity = auth.user;
 const logout = () => {
     auth.logout();
 }
@@ -14,9 +12,8 @@ const logout = () => {
     <header>
         <div class="container">
             <h1>CRM interno de ventas</h1>
-            <!-- {{ identity }} -->
             <div class="user__data">
-                <button class="logout" @click="logout">
+                <button class="logout" @click="logout" aria-label="Cerrar sesión">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
                         <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2">
@@ -26,7 +23,7 @@ const logout = () => {
                     </svg>
                 </button>
 
-                <h3>{{ identity.nombre }} {{ identity.apellido }}</h3>
+                <h3 v-if="identity">{{ identity.nombre }} {{ identity.apellido }}</h3>
             </div>
         </div>
     </header>
@@ -43,9 +40,8 @@ const logout = () => {
         display: grid;
         grid-template-columns: auto 1fr;
         align-items: center;
-
         gap: 0 .25rem;
-        border-radius: 50;
+        border-radius: 50%;
     }
 }
 
@@ -55,10 +51,9 @@ const logout = () => {
     display: grid;
     place-items: center;
     aspect-ratio: 1;
-
     padding: .3125rem;
     border: .0625rem solid #cb8080;
-
+    cursor: pointer;
     svg {
         color: rgba(152, 100, 100, 0.781);
     }

@@ -9,7 +9,7 @@ def create_app():
     app.config.from_object(Config)
     app.config['JSON_SORT_KEYS'] = False 
 
-    init_extensions(app)  # Inicializa db, migrate y jwt
+    init_extensions(app)
 
     from .routes import api
     app.register_blueprint(api, url_prefix='/api')

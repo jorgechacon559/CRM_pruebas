@@ -1,8 +1,8 @@
 import api from "../axios";
 
 export default {
-    getAllInfo(payload) {
-        return api.get(`/${payload}`);
+    getAllInfo(payload, page = 1) {
+        return api.get(`/${payload}?page=${page}`);
     },
 
     getInfoById(payload) {
