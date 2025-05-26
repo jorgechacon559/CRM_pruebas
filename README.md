@@ -82,8 +82,10 @@ Este proyecto es una plataforma completa de gestión de ventas que incluye:
 
     ```sh
     npm install
+    npm install axios chart.js
     # o
     yarn install
+    yarn add chart.js
     ```
 
 3. Configura el archivo `.env` con la URL del backend:
