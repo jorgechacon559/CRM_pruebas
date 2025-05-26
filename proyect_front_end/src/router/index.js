@@ -48,6 +48,12 @@ export const router = createRouter({
           component: () => import("@/components/usuario/AllUsers.vue"),
           meta: { requiresAuth: true }
         },
+        {
+          path: '/inicio/dashboard',
+          name: 'Dashboard',
+          component: () => import('@/components/dashboard/dashboard.vue'),
+          meta: { requiresAuth: true }
+        },
       ]
     },
   ]
