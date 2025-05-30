@@ -13,7 +13,7 @@
             v-model="correo"
             placeholder="Tu correo electrónico"
             required
-            :class="['form-control', { 'input-error': errorMsg }]"
+            :class="{'form-control': true, 'input-error': emailError}"
           />
         </div>
         <div class="form-group">
@@ -24,7 +24,7 @@
             v-model="password"
             placeholder="Tu contraseña"
             required
-            :class="['form-control', { 'input-error': errorMsg }]"
+            :class="{'form-control': true, 'input-error': emailError}"
           />
         </div>
         <button type="submit" class="btn-primary">Ingresar</button>
@@ -58,7 +58,6 @@ function mostrarToast(msg, tipo = 'success') {
 onMounted(() => {
   if (route.query.msg) {
     mostrarToast(route.query.msg, 'success')
-    // Limpia el query param para evitar que el mensaje se repita al recargar
     route.query.msg = undefined
   }
 })
@@ -66,14 +65,17 @@ onMounted(() => {
 const correo = ref('')
 const password = ref('')
 const errorMsg = ref('')
+const inputError = ref(false)
 const authStore = useAuthStore()
 
 async function login() {
   errorMsg.value = ''
+  inputError.value = false
   try {
     await authStore.login(correo.value, password.value)
   } catch (error) {
     errorMsg.value = 'Correo o contraseña incorrectos'
+    inputError.value = true
   }
 }
 </script>

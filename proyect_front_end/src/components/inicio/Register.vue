@@ -33,6 +33,7 @@
             type="email"
             id="email"
             v-model="email"
+            placeholder="Tu correo electrónico"
             :class="{'form-control': true, 'input-error': emailError}"
             required
           />
@@ -98,11 +99,20 @@ async function register() {
     return
   }
   try {
-    await authStore.register(name.value, apellido.value, email.value, password.value)
-    // Redirige al login con mensaje de éxito
-    router.push({ path: '/login', query: { msg: '¡Registro exitoso! Ahora puedes iniciar sesión.' } })
+    const response = await authStore.register(name.value, apellido.value, email.value, password.value)
+    // Asegúrate de que tu backend devuelva un campo 'success' booleano en el registro exitoso
+    if (response?.success === true || response?.msg?.toLowerCase().includes('exitoso')) {
+      // Solo si fue exitoso, redirige
+      router.push({ path: '/login', query: { msg: '¡Registro exitoso! Ahora puedes iniciar sesión.' } })
+    } else if (response?.msg?.toLowerCase().includes('correo')) {
+      errorMsg.value = "El correo ya está registrado"
+      emailError.value = true
+    } else {
+      errorMsg.value = "Error al registrar. Verifica tus datos."
+    }
   } catch (error) {
-    if (error?.response?.data?.msg?.includes('correo')) {
+    // Si el backend responde con error de correo existente
+    if (error?.response?.data?.msg?.toLowerCase().includes('correo')) {
       errorMsg.value = "El correo ya está registrado"
       emailError.value = true
     } else {
