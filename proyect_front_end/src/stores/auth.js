@@ -67,14 +67,8 @@ export const useAuthStore = defineStore("auth", {
                     password: password,
                 };
                 const response = await auth.register(credentials);
-                if (response.status === 201) {
-                    router.push("/login");
-                } else {
-                    console.error("No se pudo registrar el usuario");
-                    throw new Error("No se pudo registrar el usuario");
-                }
+                return response;
             } catch (error) {
-                console.error(error);
                 throw error;
             }
         },
