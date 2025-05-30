@@ -29,6 +29,7 @@ export const useAuthStore = defineStore("auth", {
                 router.push("/inicio");
             } catch (error) {
                 console.error(error);
+                throw error;
             }
         },
 
@@ -67,9 +68,11 @@ export const useAuthStore = defineStore("auth", {
                     router.push("/login");
                 } else {
                     console.error("No se pudo registrar el usuario");
+                    throw new Error("No se pudo registrar el usuario");
                 }
             } catch (error) {
                 console.error(error);
+                throw error;
             }
         },
 
