@@ -13,7 +13,7 @@
             v-model="correo"
             placeholder="Tu correo electrónico"
             required
-            :class="{'form-control': true, 'input-error': emailError}"
+            :class="['form-control', { 'input-error': inputError }]"
           />
         </div>
         <div class="form-group">
@@ -24,7 +24,7 @@
             v-model="password"
             placeholder="Tu contraseña"
             required
-            :class="{'form-control': true, 'input-error': emailError}"
+            :class="['form-control', { 'input-error': inputError }]"
           />
         </div>
         <button type="submit" class="btn-primary">Ingresar</button>
@@ -65,14 +65,16 @@ onMounted(() => {
 const correo = ref('')
 const password = ref('')
 const errorMsg = ref('')
-const inputError = ref(false)
 const authStore = useAuthStore()
+
+const inputError = ref(false)
 
 async function login() {
   errorMsg.value = ''
   inputError.value = false
   try {
     await authStore.login(correo.value, password.value)
+    // Redirige o muestra toast si quieres
   } catch (error) {
     errorMsg.value = 'Correo o contraseña incorrectos'
     inputError.value = true
