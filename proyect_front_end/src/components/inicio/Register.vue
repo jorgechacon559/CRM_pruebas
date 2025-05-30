@@ -113,13 +113,18 @@ async function register() {
   } catch (error) {
       console.log('Error en registro:', error)
       // Intenta leer el mensaje de varias formas
-      const msg = error?.response?.data?.msg || error?.response?.data?.message || error?.message || ''
-      console.log('Mensaje recibido:', msg)
+      const msg =
+        error?.response?.data?.msg ||
+        error?.response?.data?.message ||
+        error?.response?.data?.mensaje || // <-- agrega esta línea
+        error?.message ||
+        '';
+      console.log('Mensaje recibido:', msg);
       if (msg.toLowerCase().includes('correo') || msg.toLowerCase().includes('existe')) {
-        errorMsg.value = "El correo ya está registrado"
-        emailError.value = true
+        errorMsg.value = "El correo ya está registrado";
+        emailError.value = true;
       } else {
-        errorMsg.value = "Error al registrar. Verifica tus datos."
+        errorMsg.value = "Error al registrar. Verifica tus datos.";
       }
     }
 }
