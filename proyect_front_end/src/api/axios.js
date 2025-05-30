@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "@/stores/auth";
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:5000/api",
+  baseURL: "https://teteocan-backend.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
