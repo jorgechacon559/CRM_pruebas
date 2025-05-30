@@ -42,7 +42,12 @@ api.interceptors.response.use(
       sessionStorage.removeItem("token");
       sessionStorage.removeItem("refresh_token");
       sessionStorage.removeItem("user");
-      window.location.href = "/login";
+      if (
+        window.location.pathname !== "/login" &&
+        !error.config.url.endsWith('/login')
+      ) {
+        window.location.href = "/login";
+      };
     }
     return Promise.reject(error);
   }

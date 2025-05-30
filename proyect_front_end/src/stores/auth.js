@@ -15,6 +15,9 @@ export const useAuthStore = defineStore("auth", {
             try {
                 const credentials = { email, password };
                 const response = await auth.login(credentials);
+                if (!response.data.access_token) {
+                    throw new Error("Credenciales incorrectas");
+                }
                 this.user = {
                     usuario_id: response.data.usuario_id,
                     nombre: response.data.nombre,
