@@ -109,7 +109,8 @@ const submitData = async () => {
         const option = item.producto_id ? `productos/${item.producto_id}` : 'productos'
         const response = await products[ruta]({ option, item });
         if (['Producto registrado', 'Producto actualizado'].includes(response.message)) {
-            emit('allFine');
+            const msg = item.producto_id ? '¡Producto actualizado correctamente!' : '¡Producto registrado correctamente!';
+            emit('allFine', msg);
             closeModal();
         } else {
             throw new Error('Ha ocurrido un error');

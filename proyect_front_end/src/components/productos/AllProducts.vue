@@ -2,6 +2,18 @@
 import { reactive, onMounted, computed, ref, watch } from 'vue';
 import { useProductsStore } from '@/stores/products';
 import ModalGen from './ModalGen.vue';
+import Toast from '@/components/Toast.vue'
+
+const showToast = ref(false)
+const toastMsg = ref('')
+const toastType = ref('success')
+
+function mostrarToast(msg, tipo = 'success') {
+  toastMsg.value = msg
+  toastType.value = tipo
+  showToast.value = true
+  setTimeout(() => showToast.value = false, 2500)
+}
 
 // Encabezados de la tabla de productos
 const headers = reactive(['nombre', 'descripcion', 'precio', 'stock']);
@@ -100,7 +112,8 @@ function validateAndGoToPage() {
 </script>
 <template>
     <div class="container-all-products">
-        <ModalGen ref="modalGenFather" @allFine="getInfo" />
+        <Toast :show="showToast" :message="toastMsg" :type="toastType" />
+        <ModalGen ref="modalGenFather" @allFine="(msg) => { getInfo(); mostrarToast(msg, 'success'); }" />
         <h2>Todos los productos:</h2>
         <button @click="openModal">Crear producto</button>
         <div class="table">

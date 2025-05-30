@@ -1,8 +1,10 @@
 <template>
+  <Toast :show="showToast" :message="toastMsg" :type="toastType" />
   <div class="login-bg">
     <div class="login-container">
       <form class="login-form" @submit.prevent="login">
         <h2>Iniciar sesión</h2>
+        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
         <div class="form-group">
           <label for="email">Correo Electrónico</label>
           <input
@@ -11,7 +13,7 @@
             v-model="correo"
             placeholder="Tu correo electrónico"
             required
-            class="form-control"
+            :class="['form-control', { 'input-error': errorMsg }]"
           />
         </div>
         <div class="form-group">
@@ -22,11 +24,10 @@
             v-model="password"
             placeholder="Tu contraseña"
             required
-            class="form-control"
+            :class="['form-control', { 'input-error': errorMsg }]"
           />
         </div>
         <button type="submit" class="btn-primary">Ingresar</button>
-        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
       </form>
       <div class="login-switch">
         <span>¿No tienes una cuenta?</span>
@@ -37,27 +38,43 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { ref, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useRoute } from 'vue-router'
+import Toast from '@/components/Toast.vue'
 
-// Estado para los campos del formulario y mensajes de error
-const correo = ref('');
-const password = ref('');
-const errorMsg = ref('');
-const authStore = useAuthStore();
+const route = useRoute()
+const showToast = ref(false)
+const toastMsg = ref('')
+const toastType = ref('success')
 
-// Maneja el envío del formulario de login
+function mostrarToast(msg, tipo = 'success') {
+  toastMsg.value = msg
+  toastType.value = tipo
+  showToast.value = true
+  setTimeout(() => showToast.value = false, 3000)
+}
+
+onMounted(() => {
+  if (route.query.msg) {
+    mostrarToast(route.query.msg, 'success')
+    // Limpia el query param para evitar que el mensaje se repita al recargar
+    route.query.msg = undefined
+  }
+})
+
+const correo = ref('')
+const password = ref('')
+const errorMsg = ref('')
+const authStore = useAuthStore()
+
 async function login() {
-    try {
-        await authStore.login(correo.value, password.value);
-    } catch (error) {
-        // Muestra mensaje de error si las credenciales son incorrectas
-        errorMsg.value = "Correo o contraseña incorrectos";
-    } finally {
-        // Limpia los campos después de intentar iniciar sesión
-        correo.value = '';
-        password.value = '';
-    }
+  errorMsg.value = ''
+  try {
+    await authStore.login(correo.value, password.value)
+  } catch (error) {
+    errorMsg.value = 'Correo o contraseña incorrectos'
+  }
 }
 </script>
 
@@ -79,18 +96,37 @@ async function login() {
   width: 600px
 }
 
-.login-form {
-  background-color: #fff;
-  padding: 2.5rem 2.5rem 2rem 2.5rem;
-  border-radius: 1.5rem;
-  box-shadow: 0 8px 32px rgba(37,99,235,0.08);
-  width: 370px;
-  max-width: 95vw;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.input-error {
+  border: 2px solid #d32f2f !important;
+  background: #fff0f0;
 }
-
+.error-msg {
+  color: #d32f2f;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+@media (max-width: 600px) {
+  .login-container {
+    width: 100vw !important;
+    min-width: 0;
+    padding: 0 0.5rem;
+  }
+  .login-form {
+    background-color: #fff;
+    padding: 2.5rem 2.5rem 2rem 2.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 32px rgba(37,99,235,0.08);
+    width: 100vw !important;
+    min-width: 0;
+    padding: 1rem 0.5rem !important;
+    max-width: 95vw;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
 .login-form h2 {
   text-align: center;
   color: #2563eb;

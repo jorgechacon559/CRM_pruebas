@@ -3,6 +3,8 @@
     <div class="register-container">
       <form class="register-form" @submit.prevent="register">
         <h2 class="form-title">Crear cuenta</h2>
+        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
+        <p v-if="successMsg" class="success-msg">{{ successMsg }}</p>
         <div class="form-group">
           <label for="name">Nombre</label>
           <input
@@ -31,8 +33,7 @@
             type="email"
             id="email"
             v-model="email"
-            placeholder="Tu correo electrónico"
-            class="form-control"
+            :class="{'form-control': true, 'input-error': emailError}"
             required
           />
         </div>
@@ -43,7 +44,7 @@
             id="password"
             v-model="password"
             placeholder="Crea una contraseña"
-            class="form-control"
+            :class="{'form-control': true, 'input-error': passwordError}"
             required
           />
         </div>
@@ -54,12 +55,11 @@
             id="password2"
             v-model="password2"
             placeholder="Confirma tu contraseña"
-            class="form-control"
+            :class="{'form-control': true, 'input-error': passwordError}"
             required
           />
         </div>
         <button type="submit" class="btn-primary">Registrarse</button>
-        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
       </form>
       <div class="register-switch">
         <span>¿Ya tienes una cuenta?</span>
@@ -72,35 +72,43 @@
 <script setup>
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
 
-// Estado de los campos del formulario y mensaje de error
+const router = useRouter()
 const name = ref('')
 const apellido = ref('')
 const email = ref('')
 const password = ref('')
 const password2 = ref('')
 const errorMsg = ref('')
+const successMsg = ref('')
+const emailError = ref(false)
+const passwordError = ref(false)
 const authStore = useAuthStore()
 
-// Maneja el registro de usuario
 async function register() {
-    if (password.value !== password2.value) {
-        errorMsg.value = "Las contraseñas no coinciden";
-        return;
+  errorMsg.value = ''
+  successMsg.value = ''
+  emailError.value = false
+  passwordError.value = false
+
+  if (password.value !== password2.value) {
+    errorMsg.value = "Las contraseñas no coinciden"
+    passwordError.value = true
+    return
+  }
+  try {
+    await authStore.register(name.value, apellido.value, email.value, password.value)
+    // Redirige al login con mensaje de éxito
+    router.push({ path: '/login', query: { msg: '¡Registro exitoso! Ahora puedes iniciar sesión.' } })
+  } catch (error) {
+    if (error?.response?.data?.msg?.includes('correo')) {
+      errorMsg.value = "El correo ya está registrado"
+      emailError.value = true
+    } else {
+      errorMsg.value = "Error al registrar. Verifica tus datos."
     }
-    try {
-        await authStore.register(name.value, apellido.value, email.value, password.value)
-    } catch (error) {
-        // Muestra mensaje de error si falla el registro
-        errorMsg.value = "Error al registrar. Verifica tus datos.";
-    } finally {
-        // Limpia los campos después de intentar registrar
-        name.value = ''
-        apellido.value = ''
-        email.value = ''
-        password.value = ''
-        password2.value = ''
-    }
+  }
 }
 </script>
 
@@ -122,16 +130,38 @@ async function register() {
   width: 600px;
 }
 
-.register-form {
-  background-color: #fff;
-  padding: 2.5rem 2.5rem 2rem 2.5rem;
-  border-radius: 1.5rem;
-  box-shadow: 0 8px 32px rgba(37,99,235,0.08);
-  width: 370px;
-  max-width: 95vw;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.input-error {
+  border: 2px solid #d32f2f !important;
+  background: #fff0f0;
+}
+.error-msg {
+  color: #d32f2f;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.success-msg {
+  color: #2e7d32;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  background: #e6fbe6;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0;
+}
+@media (max-width: 600px) {
+  .register-container {
+    width: 100vw !important;
+    min-width: 0;
+    padding: 0 0.5rem;
+  }
+  .register-form {
+    width: 100vw !important;
+    min-width: 0;
+    padding: 1rem 0.5rem !important;
+  }
 }
 
 .form-title {
@@ -214,10 +244,5 @@ label {
 .btn-secondary:hover {
   background: #2563eb;
   color: #fff;
-}
-.error-msg {
-  color: #d32f2f;
-  margin-top: 0.5rem;
-  text-align: center;
 }
 </style>

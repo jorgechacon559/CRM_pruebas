@@ -4,12 +4,17 @@ import { useVentasStore } from '@/stores/ventas';
 import { useUsuariosStore } from '@/stores/usuarios';
 import { useProductsStore } from '@/stores/products';
 import ModalGenVenta from './ModalGenVenta.vue';
+import Toast from '@/components/Toast.vue'
 
 const headers = reactive(['fecha', 'Cantidad de artículos', 'total']);
 
 const ventas = useVentasStore();
 const usuarios = useUsuariosStore();
 const productos = useProductsStore();
+
+const showToast = ref(false)
+const toastMsg = ref('')
+const toastType = ref('success')
 
 const modalGenFather = ref(null);
 const pageInput = ref('');
@@ -57,11 +62,22 @@ const deleteItem = async (id) => {
 onMounted(async () => {
     await getInfo();
 });
+
+function mostrarToast(msg, tipo = 'success') {
+  toastMsg.value = msg
+  toastType.value = tipo
+  showToast.value = true
+  setTimeout(() => showToast.value = false, 2500)
+}
 </script>
 
 <template>
     <div class="container-all-sails">
-        <ModalGenVenta ref="modalGenFather" @allFine="getInfo" />
+        <Toast :show="showToast" :message="toastMsg" :type="toastType" />
+        <ModalGenVenta
+            ref="modalGenFather"
+            @allFine="(msg) => { getInfo(); mostrarToast(msg, 'success'); }"
+        />
         <h2>Todos las ventas:</h2>
         <button @click="openModal">Crear venta</button>
         <div class="table">

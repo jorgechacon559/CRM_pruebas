@@ -153,7 +153,7 @@ const submitData = async () => {
         const response = await ventas[ruta]({ option, item });
 
         if (response.success) {
-            emit('allFine');
+            emit('allFine', '¡Venta registrada correctamente!');
             closeModal();
         } else {
             throw new Error('Ha ocurrido un error');
