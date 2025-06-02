@@ -12,7 +12,8 @@ def get_all_users():
         "nombre": usuario.nombre,
         "apellido": usuario.apellido,
         "email": usuario.email,
-        "baja": usuario.baja
+        "baja": usuario.baja,
+        "rol": usuario.rol
     } for usuario in usuarios]
     return {'success': True, 'data': list_usuario}, 200
 
@@ -30,6 +31,7 @@ def get_data_usuario(usuario_id):
         "apellido": data_usuario.apellido,
         "email": data_usuario.email,
         "usuario_id": data_usuario.usuario_id,
+        "rol": data_usuario.rol
     }, 200
 
 def registrar_usuario(data):
@@ -44,6 +46,7 @@ def registrar_usuario(data):
 
     hashed_password = generate_password_hash(data['password'], method='pbkdf2:sha256', salt_length=8)
     nuevo_usuario = Usuario(
+        rol='usuario', 
         nombre=data['nombre'],
         apellido=data['apellido'],
         email=data['email'],
@@ -67,13 +70,19 @@ def login_usuario(data):
     """
     Realiza el login de un usuario validando email y contraseña.
     """
-    usuario = Usuario.query.filter_by(email=data['email']).first()
-    if usuario and check_password_hash(usuario.password, data['password']):
+    email = data.get('email')
+    password = data.get('password')
+    if not email or not password:
+        return {"mensaje": "Faltan credenciales"}, 400
+    usuario = Usuario.query.filter_by(email=email).first()
+    if usuario and not usuario.baja and check_password_hash(usuario.password, password):
         return {
             "mensaje": "Inicio de sesión exitoso",
             "usuario_id": usuario.usuario_id,
             "nombre": usuario.nombre,
-            "apellido": usuario.apellido
+            "apellido": usuario.apellido,
+            "rol": usuario.rol,
+            "email": usuario.email
         }, 201
     else:
         return {

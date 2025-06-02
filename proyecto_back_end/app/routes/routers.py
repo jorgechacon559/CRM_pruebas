@@ -18,7 +18,9 @@ def login_user():
             "refresh_token": refresh_token,
             "usuario_id": usuario_id,
             "nombre": resultado.get("nombre"),
-            "apellido": resultado.get("apellido")
+            "apellido": resultado.get("apellido"),
+            "rol": resultado.get("rol"),
+            "email": resultado.get("email")
         }), 200
     else:
         return jsonify(resultado), 401
@@ -39,6 +41,11 @@ def register_user():
 @api.route('/usuarios', methods=['GET'])
 @jwt_required()
 def get_all_data():
+    current_user_id = get_jwt_identity()
+    usuario, _ = usuario_controller.get_data_usuario(current_user_id)
+    print("ROL DEL USUARIO AUTENTICADO:", usuario.get("rol"))
+    if not usuario or usuario.get("rol") != "admin":
+        return jsonify({"error": "Acceso denegado: se requiere rol de administrador"}), 403
     usuarios, status_code = usuario_controller.get_all_users()
     return jsonify(usuarios), status_code
 
@@ -171,3 +178,51 @@ def update_detalle_venta(venta_detalle_id):
 def delete_detalle_venta(venta_detalle_id):
     detalle_venta, status_code = venta_detalle_controller.delete_detalle_venta(venta_detalle_id)
     return jsonify(detalle_venta), status_code
+
+@api.route('/usuarios/<int:usuario_id>/hacer-admin', methods=['PUT'])
+@jwt_required()
+def hacer_admin(usuario_id):
+    current_user_id = get_jwt_identity()
+    usuario_actual, _ = usuario_controller.get_data_usuario(current_user_id)
+    if not usuario_actual or usuario_actual.get("rol") != "admin":
+        return jsonify({"error": "Acceso denegado: se requiere rol de administrador"}), 403
+
+    if int(current_user_id) == int(usuario_id):
+        return jsonify({"error": "No puedes ascenderte a ti mismo"}), 400
+
+    usuario, status = usuario_controller.get_data_usuario(usuario_id)
+    if status != 200:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    from app.models import Usuario
+    user_obj = Usuario.query.get(usuario_id)
+    if user_obj.rol == "admin":
+        return jsonify({"msg": "El usuario ya es admin"}), 200
+
+    user_obj.rol = "admin"
+    from app.extensions import db
+    db.session.commit()
+    return jsonify({"msg": "Usuario ascendido a admin"}), 200
+
+@api.route('/usuarios/<int:usuario_id>/baja', methods=['PUT'])
+@jwt_required()
+def baja_usuario(usuario_id):
+    current_user_id = get_jwt_identity()
+    usuario_actual, _ = usuario_controller.get_data_usuario(current_user_id)
+    if not usuario_actual or usuario_actual.get("rol") != "admin":
+        return jsonify({"error": "Acceso denegado: se requiere rol de administrador"}), 403
+
+    usuario, status = usuario_controller.get_data_usuario(usuario_id)
+    if status != 200:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    from app.models import Usuario
+    user_obj = Usuario.query.get(usuario_id)
+    if user_obj.baja:
+        return jsonify({"msg": "El usuario ya está dado de baja"}), 200
+
+    user_obj.email = f"{user_obj.email}_baja_{usuario_id}"
+    user_obj.baja = True
+    from app.extensions import db
+    db.session.commit()
+    return jsonify({"msg": "Usuario dado de baja"}), 200

@@ -22,6 +22,8 @@ export const useAuthStore = defineStore("auth", {
                     usuario_id: response.data.usuario_id,
                     nombre: response.data.nombre,
                     apellido: response.data.apellido,
+                    rol: response.data.rol,
+                    email: response.data.email
                 };
                 this.token = response.data.access_token;
                 this.refreshToken = response.data.refresh_token;
@@ -43,7 +45,6 @@ export const useAuthStore = defineStore("auth", {
 
         async logout() {
             try {
-                // Si tienes endpoint de logout, puedes llamarlo aquí
             } catch (error) {
                 console.error(error);
             } finally {

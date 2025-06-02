@@ -11,7 +11,9 @@
 - [Ejecución](#ejecución)
 - [Funcionalidades](#funcionalidades)
 - [Endpoints principales](#endpoints-principales)
-- [Seguridad](#seguridad)
+- [Seguridad y roles](#seguridad-y-roles)
+- [Manejo de usuarios](#manejo-de-usuarios)
+- [Frontend: UX y notificaciones](#frontend-ux-y-notificaciones)
 - [Pruebas](#pruebas)
 - [Despliegue](#despliegue)
 - [Créditos y licencia](#créditos-y-licencia)
@@ -20,10 +22,10 @@
 
 ## Descripción general
 
-Este proyecto es una plataforma completa de gestión de ventas que incluye:
+Este proyecto es una plataforma integral de gestión de ventas con:
 
-- **Backend** en Python (Flask) con autenticación JWT, API RESTful, gestión de usuarios, productos y ventas, y un chatbot integrado.
-- **Frontend** moderno (React) con dashboard interactivo, visualización de métricas, autenticación y chat en tiempo real.
+- **Backend** en Python (Flask) con autenticación JWT, roles de usuario, baja lógica, API RESTful, gestión de usuarios, productos y ventas, y chatbot integrado.
+- **Frontend** en Vue 3, con dashboard interactivo, autenticación, gestión de usuarios, productos y ventas, notificaciones tipo toast, y diseño responsivo.
 
 ---
 
@@ -55,7 +57,7 @@ Este proyecto es una plataforma completa de gestión de ventas que incluye:
 3. Crea la base de datos en MySQL:
 
     ```sql
-    CREATE DATABASE STOREDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE storedb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
     ```
 
 4. Configura tu archivo `.env` con los datos de conexión:
@@ -64,10 +66,10 @@ Este proyecto es una plataforma completa de gestión de ventas que incluye:
     DB_USER=root
     DB_PASSWORD=root
     DB_HOST=localhost
-    DB_NAME=STOREDB
+    DB_NAME=storedb
     DB_PORT=3306
-    DB_DRIVER=mysql
     SECRET_KEY=your_secret_key
+    JWT_SECRET_KEY=your_jwt_secret_key
     ```
 
 ### Frontend
@@ -82,16 +84,12 @@ Este proyecto es una plataforma completa de gestión de ventas que incluye:
 
     ```sh
     npm install
-    npm install axios chart.js
-    # o
-    yarn install
-    yarn add chart.js
     ```
 
 3. Configura el archivo `.env` con la URL del backend:
 
     ```
-    REACT_APP_API_URL=http://localhost:5000/api
+    VITE_API_URL=http://localhost:5000/api
     ```
 
 ---
@@ -104,32 +102,26 @@ proyecto_back_end/
         controllers/
         models/
         routes/
-        schemas/
-        services/
-        utils/
-        static/
-        templates/
+        ...
     migrations/
     tests/
     requirements.txt
     .env
     config.py
-    wsgi.py
 
 proyecto_front_end/
     src/
         components/
-        pages/
-        services/
-        hooks/
-        utils/
+        api/
+        stores/
+        router/
         assets/
-        App.js
-        index.js
+        App.vue
+        main.js
     public/
     .env
     package.json
-    README.md
+    vite.config.js
 ```
 
 ---
@@ -165,9 +157,7 @@ flask run
 ### Frontend
 
 ```sh
-npm start
-# o
-yarn start
+npm run dev
 ```
 
 ---
@@ -176,7 +166,10 @@ yarn start
 
 ### Backend
 
-- 🔐 **Autenticación:** Registro, inicio de sesión, protección de rutas, manejo de tokens JWT.
+- 🔐 **Autenticación JWT:** Registro, login, refresh y logout seguro.
+- 👤 **Roles:** Soporte para roles `admin` y `usuario`. Solo los admins pueden acceder a la gestión de usuarios.
+- 🛑 **Baja lógica:** Los usuarios pueden ser dados de baja (soft delete), cambiando su estado y email.
+- 🛡️ **Ascenso de usuario:** Un admin puede ascender a otro usuario a admin, previa confirmación de contraseña.
 - 🛒 **Gestión:** CRUD de productos, usuarios y ventas.
 - 🤖 **Chatbot:** Consultas sobre ventas, productos y soporte.
 - 📦 **API RESTful** para integración con el frontend.
@@ -185,44 +178,83 @@ yarn start
 ### Frontend
 
 - 🖥️ **Dashboard:** Visualización de métricas y gráficas de ventas.
-- 👤 **Gestión de usuarios:** Alta, edición y baja lógica.
+- 👤 **Gestión de usuarios:** Alta, edición, baja lógica y ascenso de rol.
 - 🛍️ **Gestión de productos y ventas:** CRUD completo.
 - 💬 **Chatbot:** Interfaz de chat en tiempo real.
-- 🔒 **Autenticación:** Formularios de login y registro.
+- 🔒 **Autenticación:** Formularios de login y registro, manejo de tokens y refresh.
 - 🎨 **UI/UX:** Diseño responsivo y moderno.
+- ✅ **Notificaciones toast:** Mensajes de éxito y error con toasts personalizados (verde para éxito, rojo para errores o bajas).
 
 ---
 
 ## Endpoints principales
 
-| Método | Ruta                       | Descripción                        |
-|--------|----------------------------|------------------------------------|
-| POST   | /api/login                 | Autenticación de usuario           |
-| POST   | /api/register              | Registro de usuario                |
-| GET    | /api/usuarios              | Listar usuarios                    |
-| GET    | /api/usuarios/<id>         | Obtener usuario por ID             |
-| PUT    | /api/usuarios/<id>         | Editar usuario                     |
-| DELETE | /api/usuarios/<id>         | Baja lógica de usuario             |
-| GET    | /api/productos             | Listar productos                   |
-| GET    | /api/productos/<id>        | Obtener producto por ID            |
-| POST   | /api/productos             | Crear producto                     |
-| PUT    | /api/productos/<id>        | Editar producto                    |
-| DELETE | /api/productos/<id>        | Eliminar producto (baja lógica)    |
-| GET    | /api/ventas                | Listar ventas                      |
-| GET    | /api/ventas/<id>           | Obtener venta por ID               |
-| POST   | /api/ventas                | Crear venta                        |
-| POST   | /api/chatbot               | Consultar chatbot                  |
-| GET    | /api/metrics               | Obtener métricas de ventas         |
+| Método | Ruta                                 | Descripción                        |
+|--------|--------------------------------------|------------------------------------|
+| POST   | /api/login                           | Autenticación de usuario           |
+| POST   | /api/refresh                         | Refrescar token JWT                |
+| POST   | /api/registrar                       | Registro de usuario                |
+| GET    | /api/usuarios                        | Listar usuarios (solo admin)       |
+| PUT    | /api/usuarios/<id>/baja              | Baja lógica de usuario (admin)     |
+| PUT    | /api/usuarios/<id>/hacer-admin       | Ascender usuario a admin (admin)   |
+| GET    | /api/productos                       | Listar productos                   |
+| POST   | /api/productos                       | Crear producto                     |
+| PUT    | /api/productos/<id>                  | Editar producto                    |
+| DELETE | /api/productos/<id>                  | Eliminar producto (baja lógica)    |
+| GET    | /api/ventas                          | Listar ventas                      |
+| POST   | /api/ventas                          | Crear venta                        |
+| GET    | /api/chatbot                         | Consultar chatbot                  |
+| GET    | /api/ventas/data                     | Obtener métricas de ventas         |
 
 ---
 
-## Seguridad
+## Seguridad y roles
 
-- Contraseñas hasheadas con bcrypt.
-- Autenticación y autorización con JWT.
-- CORS configurado para integración frontend-backend.
-- Validación de datos y manejo de errores.
-- Protección contra ataques comunes (CSRF, XSS, etc).
+- **Contraseñas:** Hasheadas con bcrypt.
+- **Roles:**  
+  - `admin`: Acceso total a usuarios, productos y ventas.
+  - `usuario`: Acceso solo a sus propios datos y ventas.
+- **Protección de rutas:**  
+  - Solo admins pueden acceder a `/usuarios` y realizar bajas o ascensos.
+  - Validación de rol en backend y frontend.
+- **Tokens JWT:**  
+  - Acceso y refresh token, guardados en sessionStorage.
+  - Middleware para refrescar token automáticamente en frontend.
+- **Baja lógica:**  
+  - El usuario dado de baja no puede volver a iniciar sesión.
+  - El email se modifica para evitar duplicados (`email_baja_<id>`).
+
+---
+
+## Manejo de usuarios
+
+- **Registro:**  
+  - Validación de email único.
+  - Contraseña fuerte (mínimo 8 caracteres, mayúsculas, minúsculas, número y símbolo).
+- **Login:**  
+  - Devuelve datos completos del usuario (incluyendo email y rol).
+- **Ascenso a admin:**  
+  - Modal de confirmación, requiere contraseña del admin actual.
+  - Toast verde al éxito, mensaje de error si la contraseña es incorrecta.
+- **Baja lógica:**  
+  - Solo admins pueden dar de baja.
+  - Toast rojo al dar de baja, mensaje de error si falla.
+
+---
+
+## Frontend: UX y notificaciones
+
+- **Toasts personalizados:**  
+  - Componente `Toast.vue` reutilizable.
+  - Verde para éxito (`success`), rojo para errores o bajas (`error`).
+  - Cierre automático y manual.
+- **Validaciones visuales:**  
+  - Inputs con feedback visual para errores.
+  - Mensajes claros en formularios de login y registro.
+- **Paginación y búsqueda:**  
+  - Listados paginados de usuarios y ventas.
+- **Modal de ascenso:**  
+  - Confirmación con contraseña antes de ascender a admin.
 
 ---
 

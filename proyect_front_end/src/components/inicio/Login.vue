@@ -40,10 +40,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRoute } from 'vue-router'
 import Toast from '@/components/Toast.vue'
+import { useMessageStore } from '@/stores/message'
 
-const route = useRoute()
+const messageStore = useMessageStore()
 const showToast = ref(false)
 const toastMsg = ref('')
 const toastType = ref('success')
@@ -56,9 +56,9 @@ function mostrarToast(msg, tipo = 'success') {
 }
 
 onMounted(() => {
-  if (route.query.msg) {
-    mostrarToast(route.query.msg, 'success')
-    route.query.msg = undefined
+  if (messageStore.msg) {
+    mostrarToast(messageStore.msg, messageStore.type)
+    messageStore.clearMessage()
   }
 })
 

@@ -1,40 +1,46 @@
 <script setup>
-import { reactive, onMounted, computed, ref, watch } from 'vue';
+import { reactive, onMounted, computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useUsuariosStore } from '@/stores/usuarios';
+import api from '@/api/axios';
+import Toast from '@/components/Toast.vue';
 
-// Encabezados de la tabla de usuarios
-const headers = reactive(['Nombre', 'Apellido', 'Correo']);
+const showToast = ref(false)
+const toastMessage = ref('')
+const toastType = ref('success')
 
-// Estado del paginador
+function showSuccessToast(msg) {
+  toastMessage.value = msg
+  toastType.value = 'success'
+  showToast.value = true
+  setTimeout(() => { showToast.value = false }, 2500)
+}
+
+function showErrorToast(msg) {
+  toastMessage.value = msg
+  toastType.value = 'error'
+  showToast.value = true
+  setTimeout(() => { showToast.value = false }, 2500)
+}
+
+const headers = reactive(['Nombre', 'Apellido', 'Correo', 'Rol', 'Acciones']);
 const paginadorData = reactive({
     currentPage: 1,
     totalPages: undefined,
     itemsPerPage: 15,
 });
-
-// Input local para el paginador
 const pageInput = ref('');
-
-// Sincroniza el input con la página actual
 watch(() => paginadorData.currentPage, (val) => {
   pageInput.value = val ? val.toString() : '';
 });
-
 const usuarios = useUsuariosStore();
-
-// Obtiene los usuarios paginados según la página actual
 const usuariosData = computed(() => {
     const data = usuarios.data;
     if(!data) return;
-    paginadorData.totalPages = Math.ceil(data.length / paginadorData.itemsPerPage);
-
+    paginadorData.totalPages = Math.max(1, Math.ceil(data.length / paginadorData.itemsPerPage));
     const start = (paginadorData.currentPage - 1) * paginadorData.itemsPerPage;
     const end = start + paginadorData.itemsPerPage;
-
     return data.slice(start, end);
 });
-
-// Corrige el número de página si es inválido
 watch(() => paginadorData.currentPage,
 (newVal) => {
     if((newVal === null || newVal === undefined || newVal === '') || newVal < 1) {
@@ -43,48 +49,115 @@ watch(() => paginadorData.currentPage,
         paginadorData.currentPage = paginadorData.totalPages;
     }
 });
-
-// Cambia la página del paginador
 const paginatorState = (toRight) => {
     paginadorData.currentPage = toRight ?
         Math.min(paginadorData.totalPages, ++paginadorData.currentPage) :
         Math.max(1, --paginadorData.currentPage);
 };
-
-// Valida y navega a la página indicada por el usuario
 const validateAndGoToPage = () => {
     const page = parseInt(pageInput.value, 10);
     if (!isNaN(page) && page >= 1 && page <= paginadorData.totalPages) {
         paginadorData.currentPage = page;
     }
-    // Si no es válido, puedes limpiar el input o dejarlo igual
 };
-
-// Obtiene el usuario actual desde sessionStorage (si se requiere para lógica futura)
 let identity = sessionStorage.getItem('user');
 identity = identity ? JSON.parse(identity) : null;
-
-// Obtiene todos los usuarios desde el store
 const getInfo = async () => {
     await usuarios.getAllInfoUsr('usuarios');
 };
-
-// Carga los usuarios al montar el componente
 onMounted(async () => {
     await getInfo();
 });
+
+// Modal para upgrade
+const showUpgradeModal = ref(false);
+const usuarioUpgradeId = ref(null);
+const adminPassword = ref('');
+const upgradeError = ref('');
+
+const confirmarUpgrade = (usuario_id) => {
+    usuarioUpgradeId.value = usuario_id;
+    adminPassword.value = '';
+    upgradeError.value = '';
+    showUpgradeModal.value = true;
+    setTimeout(() => {
+      document.addEventListener('keydown', handleEsc);
+    }, 0);
+};
+
+const cancelarUpgrade = () => {
+    showUpgradeModal.value = false;
+    usuarioUpgradeId.value = null;
+    adminPassword.value = '';
+    upgradeError.value = '';
+    document.removeEventListener('keydown', handleEsc);
+};
+
+const handleEsc = (e) => {
+    if (e.key === 'Escape') cancelarUpgrade();
+};
+
+const modalOverlayClick = (e) => {
+    if (e.target.classList.contains('modal-overlay')) cancelarUpgrade();
+};
+
+onBeforeUnmount(() => {
+    document.removeEventListener('keydown', handleEsc);
+});
+
+const realizarUpgrade = async () => {
+    upgradeError.value = '';
+    try {
+        const adminEmail = identity.email;
+        if (!adminEmail) {
+            upgradeError.value = 'No se encontró el correo del administrador actual.';
+            return;
+        }
+        const response = await api.post('/login', {
+            email: adminEmail,
+            password: adminPassword.value
+        });
+        if (response.data && response.data.access_token) {
+            await api.put(`/usuarios/${usuarioUpgradeId.value}/hacer-admin`, {}, {
+                headers: { Authorization: `Bearer ${response.data.access_token}` }
+            });
+            await getInfo();
+            cancelarUpgrade();
+            showSuccessToast('Usuario ascendido a Administrador correctamente');
+        } else {
+            upgradeError.value = 'Contraseña incorrecta';
+        }
+    } catch (e) {
+        upgradeError.value = 'Contraseña incorrecta o error de autenticación';
+    }
+};
+
+const eliminarUsuario = async (usuario_id) => {
+    try {
+        const token = sessionStorage.getItem("token");
+        await api.put(`/usuarios/${usuario_id}/baja`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        await getInfo();
+        showErrorToast('Usuario dado de baja');
+    } catch (e) {
+        showErrorToast('No se pudo eliminar al usuario');
+    }
+};
 </script>
+
 <template>
-    <div class="container-all-sails">
+    <div class="container-all-sails content">
         <h2>Todos los usuarios:</h2>
-        <div class="table">
+        <div class="table table-bg">
             <div class="table-heads">
                 <div v-for="(head, index) in headers" :key="index">
                     <p>{{ head }}</p>
                 </div>
             </div>
             <div class="table-data">
-                <div class="table-row" v-for="(item, index) in usuariosData" :key="index">
+                <div class="table-row" v-for="(item, index) in usuariosData" :key="index"
+                     :style="{opacity: item.baja ? 0.5 : 1}">
                     <div>
                         <p>{{ item.nombre }}</p>
                     </div>
@@ -94,9 +167,39 @@ onMounted(async () => {
                     <div>
                         <p>{{ item.email }}</p>
                     </div>
+                    <div>
+                        <p>{{ item.rol }}</p>
+                    </div>
+                    <div class="acciones">
+                        <!-- Botón upgrade a admin -->
+                        <button
+                          v-if="identity && identity.rol === 'admin' && item.rol !== 'admin' && !item.baja"
+                          class="btn-circular btn-upgrade"
+                          @click="confirmarUpgrade(item.usuario_id)"
+                          title="Hacer admin"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="10" cy="10" r="9" stroke="#15803d" stroke-width="2" fill="#e6fbe6"/>
+                            <polyline points="5 12 10 7 15 12" stroke="#15803d" stroke-width="2" fill="none"/>
+                          </svg>
+                        </button>
+                        <!-- Botón eliminar -->
+                        <button
+                          v-if="identity && identity.rol === 'admin' && !item.baja"
+                          class="btn-circular btn-delete"
+                          @click="eliminarUsuario(item.usuario_id)"
+                          title="Eliminar usuario"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="10" cy="10" r="9" stroke="#d32f2f" stroke-width="2" fill="#fff0f0"/>
+                            <line x1="5" y1="5" x2="15" y2="15"/>
+                            <line x1="15" y1="5" x2="5" y2="15"/>
+                          </svg>
+                        </button>
+                        <span v-if="item.baja" style="color: #d32f2f;">Inactivo</span>
+                    </div>
                 </div>
             </div>
-
             <div class="paginator">
                 <div class="paginator-controls">
                     <button @click="paginatorState(false)">
@@ -130,7 +233,22 @@ onMounted(async () => {
             </div>
         </div>
     </div>
+    <!-- Modal de confirmación para upgrade -->
+    <div v-if="showUpgradeModal" class="modal-overlay" @mousedown="modalOverlayClick">
+      <div class="modal-content" @mousedown.stop>
+        <h3>Confirmar ascenso a Administrados</h3>
+        <p>Para continuar, ingresa tu contraseña:</p>
+        <input type="password" v-model="adminPassword" placeholder="Contraseña actual" />
+        <div class="modal-actions">
+          <button @click="realizarUpgrade" class="btn-upgrade">Confirmar</button>
+          <button @click="cancelarUpgrade" class="btn-delete">Cancelar</button>
+        </div>
+        <p v-if="upgradeError" style="color:#d32f2f;">{{ upgradeError }}</p>
+      </div>
+    </div>
+    <Toast :show="showToast" :message="toastMessage" :type="toastType" @close="showToast = false" />
 </template>
+
 <style scoped lang="scss">
 .table {
     display: grid;
@@ -140,8 +258,7 @@ onMounted(async () => {
     &-heads {
         display: grid;
         text-transform: capitalize;
-
-        grid-template-columns: 12.5rem 18.75rem 18.75rem;
+        grid-template-columns: 10rem 10rem 18rem 7rem 14rem;
         gap: .125rem;
     }
 
@@ -152,22 +269,50 @@ onMounted(async () => {
 
     &-row {
         display: grid;
-        grid-template-columns: 12.5rem 18.75rem 18.75rem;
+        grid-template-columns: 10rem 10rem 18rem 7rem 14rem;
         gap: .125rem;
 
         >div {
             display: -webkit-box;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 1;
-            line-clamp: 1; /* Propiedad estándar */
+            line-clamp: 1;
             overflow: hidden;
         }
-
-        button {
+        .acciones {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .btn-circular {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
             display: grid;
             place-items: center;
+            padding: 0;
+            background: transparent;
+            transition: background 0.2s;
+        }
+        .btn-upgrade {
+            &:hover {
+                background: #e6fbe6;
+            }
+        }
+        .btn-delete {
+            &:hover {
+                background: #ffeaea;
+            }
         }
     }
+}
+
+.table-bg {
+    background: #fff;
+    border-radius: 1.2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    padding: 1.5rem 2rem;
 }
 
 .paginator {
@@ -194,5 +339,29 @@ onMounted(async () => {
         background-color: rgb(142, 183, 222);
         border: none;
     }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  min-width: 320px;
+  max-width: 90vw;
+}
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
 }
 </style>

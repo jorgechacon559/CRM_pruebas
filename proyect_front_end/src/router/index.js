@@ -65,6 +65,19 @@ router.beforeEach(async (to, from, next) => {
   const refreshToken = sessionStorage.getItem('refresh_token');
   const authStore = useAuthStore();
 
+  // Si la ruta requiere ser admin
+  if (to.path === '/inicio/usuarios') {
+    if (!user) {
+      next({ name: 'login' });
+      return;
+    }
+    const userObj = JSON.parse(user);
+    if (userObj.rol !== 'admin') {
+      next({ name: 'inicio' });
+      return;
+    }
+  }
+
   if (to.meta.requiresAuth) {
     if (!user) {
       next({ name: 'login' });
